@@ -1,4 +1,5 @@
 <?php
+
 namespace NL;
 
 use PDO;
@@ -22,7 +23,7 @@ class Stock
     }
 
     // Cập nhật số lượng sản phẩm khi thay đổi kho
-    public function updateStockQuantity($product_id, $quantity_change, $change_type)
+    public function updateStockQuantity($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null)
     {
         $currentProduct = $this->getProductById($product_id);
 
@@ -42,7 +43,7 @@ class Stock
         $stmt->execute();
 
         // Lưu lịch sử thay đổi vào bảng stock_history
-        $this->logStockChange($product_id, $quantity_change, $change_type);
+        $this->logStockChange($product_id, $quantity_change, $change_type, $import_price, $export_price);
 
         return true;
     }
@@ -57,14 +58,29 @@ class Stock
     }
 
     // Lưu lịch sử thay đổi kho vào bảng stock_history
-    private function logStockChange($product_id, $quantity_change, $change_type)
+    private function logStockChange($product_id, $quantity_change, $change_type, $import_price = null, $export_price)
     {
-        $stmt = $this->db->prepare("INSERT INTO stock_history (product_id, change_quantity, change_type, change_date) 
-                                    VALUES (:product_id, :change_quantity, :change_type, NOW())");
-        $stmt->bindParam(':product_id', $product_id, PDO::PARAM_INT);
-        $stmt->bindParam(':change_quantity', $quantity_change, PDO::PARAM_INT);
-        $stmt->bindParam(':change_type', $change_type, PDO::PARAM_STR);
-        $stmt->execute();
+        if ($change_type === 'in') {
+            $stmt = $this->db->prepare("INSERT INTO stock_history 
+        (product_id, change_quantity, change_type, change_date, import_price, export_price)
+        VALUES (:product_id, :change_quantity, :change_type, NOW(), :import_price, NULL)");
+            $stmt->execute([
+                ':product_id' => $product_id,
+                ':change_quantity' => $quantity_change,
+                ':change_type' => $change_type,
+                ':import_price' => $import_price
+            ]);
+        } else {
+            $stmt = $this->db->prepare("INSERT INTO stock_history 
+        (product_id, change_quantity, change_type, change_date, import_price, export_price)
+        VALUES (:product_id, :change_quantity, :change_type, NOW(), NULL, :export_price)");
+            $stmt->execute([
+                ':product_id' => $product_id,
+                ':change_quantity' => $quantity_change,
+                ':change_type' => $change_type,
+                ':export_price' => $export_price
+            ]);
+        }
     }
 
     // Lấy tất cả lịch sử thay đổi kho
@@ -74,4 +90,3 @@ class Stock
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 }
-?>
