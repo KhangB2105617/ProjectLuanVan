@@ -78,6 +78,22 @@ foreach ($reviews as $review) {
                                 }
                             }
                         </script>
+                        <?php
+                        $canReview = false;
+
+                        if ($isLoggedIn && isset($_SESSION['username'])) {
+                            $currentUsername = $_SESSION['username'];
+                            $productName = $product->name;
+
+                            $stmt = $PDO->prepare("
+                                SELECT COUNT(*) FROM orders 
+                                WHERE username = ? AND product_name = ? AND status = 'Đã giao'
+                                ");
+                            $stmt->execute([$currentUsername, $productName]);
+                            $canReview = $stmt->fetchColumn() > 0;
+                        }
+
+                        ?>
 
                         <a href="product.php" class="btn btn-secondary">⬅️ Quay lại</a>
                     </div>
@@ -118,77 +134,92 @@ foreach ($reviews as $review) {
             </div>
         </div>
         <style>
-    .rating-summary h2 {
-        font-size: 2rem;
-        font-weight: bold;
-    }
-    .rating-summary span {
-        font-size: 1.5rem;
-    }
-    .progress {
-        height: 10px;
-        border-radius: 5px;
-        background-color: #eee;
-    }
-    .progress-bar {
-        border-radius: 5px;
-    }
-    .review-container .review {
-        background: #fff;
-        border-radius: 10px;
-        padding: 15px;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    }
-    .btn-primary {
-        background-color: #007bff;
-        border-color: #007bff;
-    }
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-    /* Modal CSS */
-    .review-modal {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        z-index: 1000;
-    }
-    .overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
-    }
-</style>
+            .rating-summary h2 {
+                font-size: 2rem;
+                font-weight: bold;
+            }
 
-<div class="container mt-4 mb-5">
+            .rating-summary span {
+                font-size: 1.5rem;
+            }
+
+            .progress {
+                height: 10px;
+                border-radius: 5px;
+                background-color: #eee;
+            }
+
+            .progress-bar {
+                border-radius: 5px;
+            }
+
+            .review-container .review {
+                background: #fff;
+                border-radius: 10px;
+                padding: 15px;
+                box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .btn-primary {
+                background-color: #007bff;
+                border-color: #007bff;
+            }
+
+            .btn-primary:hover {
+                background-color: #0056b3;
+            }
+
+            /* Modal CSS */
+            .review-modal {
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                z-index: 1000;
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+        </style>
+
+        <div class="container mt-4 mb-5">
             <div class="d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">Đánh giá từ khách hàng</h3>
             </div>
             <hr>
 
             <div class="d-flex justify-content-between align-items-center mb-3" style="max-width: 50%;">
-    <div class="rating-summary d-flex align-items-center">
-        <h2 class="me-3 text-warning" style="font-size: 1.5rem;"> <?= number_format($averageRating, 1); ?> </h2>
-        <div style="font-size: 1rem;">
-            <span class="text-warning"> <?= str_repeat('⭐', floor($averageRating)); ?> </span>
-            <?php if ($averageRating - floor($averageRating) >= 0.5): ?>
-                <span class="text-warning">★</span>
-            <?php endif; ?>
-        </div>
-    </div>
-    <button id="toggleReviewForm" class="btn btn-primary">✍️ Viết đánh giá</button>
-</div>
+                <div class="rating-summary d-flex align-items-center">
+                    <h2 class="me-3 text-warning" style="font-size: 1.5rem;"> <?= number_format($averageRating, 1); ?> </h2>
+                    <div style="font-size: 1rem;">
+                        <span class="text-warning"> <?= str_repeat('⭐', floor($averageRating)); ?> </span>
+                        <?php if ($averageRating - floor($averageRating) >= 0.5): ?>
+                            <span class="text-warning">★</span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if ($canReview): ?>
+                    <button id="toggleReviewForm" class="btn btn-primary">✍️ Viết đánh giá</button>
+                <?php elseif ($isLoggedIn): ?>
+                    <p class="text-muted fst-italic">Bạn cần mua sản phẩm để có thể đánh giá.</p>
+                <?php else: ?>
+                    <p class="text-muted fst-italic">* Vui lòng đăng nhập để viết đánh giá.</p>
+                <?php endif; ?>
+
+            </div>
 
             <?php for ($i = 5; $i >= 1; $i--): ?>
                 <div class="d-flex align-items-center" style="max-width: 50%;">
@@ -200,60 +231,61 @@ foreach ($reviews as $review) {
                 </div>
             <?php endfor; ?>
 
-    <div class="review-container mt-4">
-        <?php if ($reviews): ?>
-            <?php foreach ($reviews as $review): ?>
-                <div class="review border p-3 mb-3 rounded shadow-sm">
-                    <strong><?= htmlspecialchars($review['customer_name']); ?></strong> -
-                    <span><?= str_repeat('⭐', $review['rating']); ?></span>
-                    <p><?= nl2br(htmlspecialchars($review['comment'])); ?></p>
-                    <small class="text-muted"><?= $review['created_at']; ?></small>
+            <div class="review-container mt-4">
+                <?php if ($reviews): ?>
+                    <?php foreach ($reviews as $review): ?>
+                        <div class="review border p-3 mb-3 rounded shadow-sm">
+                            <strong><?= htmlspecialchars($review['customer_name']); ?></strong> -
+                            <span><?= str_repeat('⭐', $review['rating']); ?></span>
+                            <p><?= nl2br(htmlspecialchars($review['comment'])); ?></p>
+                            <small class="text-muted"><?= $review['created_at']; ?></small>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p>Chưa có đánh giá nào.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Modal Form -->
+        <div class="overlay" id="overlay"></div>
+        <div class="review-modal" id="reviewForm">
+            <h4>Viết đánh giá của bạn</h4>
+            <form action="submit_review.php" method="POST">
+                <input type="hidden" name="product_id" value="<?= $product->id; ?>">
+                <input type="hidden" name="product_name" value="<?= htmlspecialchars($product->name); ?>">
+                <div class="mb-3">
+                    <label for="customer_name">Tên của bạn:</label>
+                    <input type="text" name="customer_name" class="form-control" required>
                 </div>
-            <?php endforeach; ?>
-        <?php else: ?>
-            <p>Chưa có đánh giá nào.</p>
-        <?php endif; ?>
-    </div>
-</div>
+                <div class="mb-3">
+                    <label for="rating">Đánh giá:</label>
+                    <select name="rating" class="form-select" required>
+                        <option value="5">⭐⭐⭐⭐⭐</option>
+                        <option value="4">⭐⭐⭐⭐</option>
+                        <option value="3">⭐⭐⭐</option>
+                        <option value="2">⭐⭐</option>
+                        <option value="1">⭐</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="comment">Nhận xét:</label>
+                    <textarea name="comment" class="form-control" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Gửi đánh giá</button>
+            </form>
+        </div>
 
-<!-- Modal Form -->
-<div class="overlay" id="overlay"></div>
-<div class="review-modal" id="reviewForm">
-    <h4>Viết đánh giá của bạn</h4>
-    <form action="submit_review.php" method="POST">
-        <input type="hidden" name="product_id" value="<?= $product->id; ?>">
-        <div class="mb-3">
-            <label for="customer_name">Tên của bạn:</label>
-            <input type="text" name="customer_name" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label for="rating">Đánh giá:</label>
-            <select name="rating" class="form-select" required>
-                <option value="5">⭐⭐⭐⭐⭐</option>
-                <option value="4">⭐⭐⭐⭐</option>
-                <option value="3">⭐⭐⭐</option>
-                <option value="2">⭐⭐</option>
-                <option value="1">⭐</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="comment">Nhận xét:</label>
-            <textarea name="comment" class="form-control" rows="3"></textarea>
-        </div>
-        <button type="submit" class="btn btn-success">Gửi đánh giá</button>
-    </form>
-</div>
-
-<script>
-    document.getElementById("toggleReviewForm").addEventListener("click", function() {
-        document.getElementById("reviewForm").style.display = "block";
-        document.getElementById("overlay").style.display = "block";
-    });
-    document.getElementById("overlay").addEventListener("click", function() {
-        document.getElementById("reviewForm").style.display = "none";
-        document.getElementById("overlay").style.display = "none";
-    });
-</script>
+        <script>
+            document.getElementById("toggleReviewForm").addEventListener("click", function() {
+                document.getElementById("reviewForm").style.display = "block";
+                document.getElementById("overlay").style.display = "block";
+            });
+            document.getElementById("overlay").addEventListener("click", function() {
+                document.getElementById("reviewForm").style.display = "none";
+                document.getElementById("overlay").style.display = "none";
+            });
+        </script>
 
     </main>
 </div>
