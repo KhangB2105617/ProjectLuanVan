@@ -79,7 +79,7 @@ if (session_status() === PHP_SESSION_NONE) {
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
             <?php if (isset($_SESSION['username'])): ?>
-                <li><a class="dropdown-item" href="admin/settingadmin.php">Xin chào, <?php echo $_SESSION['username']; ?></a></li>
+                <li><a class="dropdown-item" href="">Xin chào, <?php echo $_SESSION['username']; ?></a></li>
                 <?php if (isset($_SESSION['role'])): ?>
                     <?php if ($_SESSION['role'] === 'customer'): ?>
                         <li><a class="dropdown-item" href="edit_profile.php">Chỉnh sửa thông tin</a></li>
