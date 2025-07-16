@@ -1,6 +1,7 @@
 <?php
-session_start(); // Khởi tạo session
-
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/../../src/bootstrap.php';
 
 use NL\Product;
@@ -26,8 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $user_id = $_SESSION['user_id'] ?? null;
+
     // Cập nhật tồn kho
-    $result = $stock->updateStockQuantity($product_id, $quantity_change, $change_type, $import_price, $export_price);
+    $result = $stock->updateStockQuantity($product_id, $quantity_change, $change_type, $import_price, $export_price, $user_id);
 
     if ($result) {
         echo "<div class='alert alert-success'>Cập nhật tồn kho thành công!</div>";
@@ -187,7 +190,8 @@ $history = $stock->getStockHistory();
                         <th>Số lượng thay đổi</th>
                         <th>Loại thay đổi</th>
                         <th>Giá nhập/xuất</th>
-                        <th>Thời gian</th>
+                        <th>Thời gian nhập/xuất</th>
+                        <th>Người thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -205,6 +209,7 @@ $history = $stock->getStockHistory();
                             </td>
 
                             <td><?= $entry->change_date ?></td>
+                            <td><?= htmlspecialchars($entry->user_name ?? 'Không rõ') ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

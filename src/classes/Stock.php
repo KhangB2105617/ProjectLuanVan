@@ -23,30 +23,31 @@ class Stock
     }
 
     // Cập nhật số lượng sản phẩm khi thay đổi kho
-    public function updateStockQuantity($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null)
-    {
-        $currentProduct = $this->getProductById($product_id);
+   public function updateStockQuantity($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null, $user_id = null, $log = true)
+{
+    $currentProduct = $this->getProductById($product_id);
 
-        if (!$currentProduct) {
-            return false; // Sản phẩm không tồn tại
-        }
+    if (!$currentProduct) return false;
 
-        $new_quantity = ($change_type === 'in') ? $currentProduct->quantity + $quantity_change : $currentProduct->quantity - $quantity_change;
+    $new_quantity = ($change_type === 'in')
+        ? $currentProduct->quantity + $quantity_change
+        : $currentProduct->quantity - $quantity_change;
 
-        if ($new_quantity < 0) {
-            return false; // Không đủ sản phẩm để xuất kho
-        }
+    if ($new_quantity < 0) return false;
 
-        $stmt = $this->db->prepare("UPDATE products SET quantity = :quantity WHERE id = :id");
-        $stmt->bindParam(':quantity', $new_quantity, PDO::PARAM_INT);
-        $stmt->bindParam(':id', $product_id, PDO::PARAM_INT);
-        $stmt->execute();
+    $stmt = $this->db->prepare("UPDATE products SET quantity = :quantity WHERE id = :id");
+    $stmt->bindParam(':quantity', $new_quantity, PDO::PARAM_INT);
+    $stmt->bindParam(':id', $product_id, PDO::PARAM_INT);
+    $stmt->execute();
 
-        // Lưu lịch sử thay đổi vào bảng stock_history
-        $this->logStockChange($product_id, $quantity_change, $change_type, $import_price, $export_price);
-
-        return true;
+    // Ghi log nếu cần
+    if ($log) {
+        $user_id = $_SESSION['user_id'] ?? $user_id;
+        $this->logStockChange($product_id, $quantity_change, $change_type, $import_price, $export_price, $user_id);
     }
+
+    return true;
+}
 
     // Lấy thông tin sản phẩm theo id
     private function getProductById($product_id)
@@ -58,35 +59,34 @@ class Stock
     }
 
     // Lưu lịch sử thay đổi kho vào bảng stock_history
-    private function logStockChange($product_id, $quantity_change, $change_type, $import_price = null, $export_price)
+    private function logStockChange($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null, $user_id = null)
     {
-        if ($change_type === 'in') {
-            $stmt = $this->db->prepare("INSERT INTO stock_history 
-        (product_id, change_quantity, change_type, change_date, import_price, export_price)
-        VALUES (:product_id, :change_quantity, :change_type, NOW(), :import_price, NULL)");
-            $stmt->execute([
-                ':product_id' => $product_id,
-                ':change_quantity' => $quantity_change,
-                ':change_type' => $change_type,
-                ':import_price' => $import_price
-            ]);
-        } else {
-            $stmt = $this->db->prepare("INSERT INTO stock_history 
-        (product_id, change_quantity, change_type, change_date, import_price, export_price)
-        VALUES (:product_id, :change_quantity, :change_type, NOW(), NULL, :export_price)");
-            $stmt->execute([
-                ':product_id' => $product_id,
-                ':change_quantity' => $quantity_change,
-                ':change_type' => $change_type,
-                ':export_price' => $export_price
-            ]);
-        }
+        $stmt = $this->db->prepare("
+        INSERT INTO stock_history 
+        (product_id, change_quantity, change_type, change_date, import_price, export_price, user_id)
+        VALUES (:product_id, :change_quantity, :change_type, NOW(), :import_price, :export_price, :user_id)
+    ");
+        $stmt->execute([
+            ':product_id' => $product_id,
+            ':change_quantity' => $quantity_change,
+            ':change_type' => $change_type,
+            ':import_price' => $change_type === 'in' ? $import_price : null,
+            ':export_price' => $change_type === 'out' ? $export_price : null,
+            ':user_id' => $user_id,
+        ]);
     }
 
-    // Lấy tất cả lịch sử thay đổi kho
+
+    // Lấy tất cả lịch sử thay đổi kho kèm tên người thao tác
     public function getStockHistory()
     {
-        $stmt = $this->db->query("SELECT sh.*, p.name AS product_name FROM stock_history sh JOIN products p ON sh.product_id = p.id ORDER BY sh.change_date DESC");
+        $stmt = $this->db->query("
+            SELECT sh.*, p.name AS product_name, u.username AS user_name
+            FROM stock_history sh
+            JOIN products p ON sh.product_id = p.id
+            LEFT JOIN users u ON sh.user_id = u.id
+            ORDER BY sh.change_date DESC
+        ");
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 }

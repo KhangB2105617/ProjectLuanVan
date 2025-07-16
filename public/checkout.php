@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $orderModel->createOrder($name, $username,$email, $address, $phone, $product->name, $quantity, $subtotal, 'Đang xử lý');
 
         // Cập nhật số lượng sản phẩm trong kho
-        $stockModel->updateStockQuantity($product->id, $quantity, 'out'); // Trừ số lượng khi xuất kho
+        $stockModel->updateStockQuantity($product->id, $quantity, 'out', null, null, null, false);
     }
 
     // Xóa giỏ hàng sau khi thanh toán
