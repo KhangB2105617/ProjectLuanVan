@@ -135,16 +135,42 @@ public function delete($id)
     return $stmt->execute();
 }
 
+function removeVietnameseTones($str)
+{
+    $str = mb_strtolower($str, 'UTF-8');
+    $accents = [
+        'a'=>'áàảãạăắằẳẵặâấầẩẫậ',
+        'd'=>'đ',
+        'e'=>'éèẻẽẹêếềểễệ',
+        'i'=>'íìỉĩị',
+        'o'=>'óòỏõọôốồổỗộơớờởỡợ',
+        'u'=>'úùủũụưứừửữự',
+        'y'=>'ýỳỷỹỵ'
+    ];
+    foreach ($accents as $nonAccent => $accentsGroup) {
+        $str = preg_replace('/[' . $accentsGroup . ']/u', $nonAccent, $str);
+    }
+    return $str;
+}
+
 // Tìm kiếm sản phẩm
 public function searchProducts($searchTerm)
 {
-    $sql = "SELECT * FROM products WHERE name LIKE :searchTerm OR description LIKE :searchTerm";
-    $stmt = $this->db->prepare($sql);
-    $searchTerm = '%' . $searchTerm . '%';
-    $stmt->bindParam(':searchTerm', $searchTerm, PDO::PARAM_STR);
-    $stmt->execute();
+    $normalized = $this->removeVietnameseTones($searchTerm);
+    $normalized = mb_strtolower($normalized, 'UTF-8');
 
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
+    $allProducts = $this->getAll();
+    $results = [];
+
+    foreach ($allProducts as $product) {
+        $nameNorm = mb_strtolower($this->removeVietnameseTones($product->name), 'UTF-8');
+        $descNorm = mb_strtolower($this->removeVietnameseTones($product->description), 'UTF-8');
+
+        if (strpos($nameNorm, $normalized) !== false || strpos($descNorm, $normalized) !== false) {
+            $results[] = $product;
+        }
+    }
+
+    return $results;
 }
-
 }
