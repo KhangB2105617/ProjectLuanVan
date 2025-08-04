@@ -21,10 +21,41 @@ $stockModel = new Stock($PDO);
 $user = $userModel->getByUsername($username);
 
 // --- Lấy giỏ hàng ---
-$cart = $_SESSION['cart'] ?? [];
-if (empty($cart)) {
-    echo "<div class='container mt-5 text-center'><h2>Giỏ hàng của bạn đang trống</h2><a href='product.php' class='btn btn-primary mt-3'>Tiếp tục mua sắm</a></div>";
-    exit;
+$cart = [];
+$products = [];
+$totalPrice = 0;
+
+if (isset($_SESSION['user_id'])) {
+    $cartItemModel = new \NL\CartItem($PDO);
+    $cartItems = $cartItemModel->getByUser($_SESSION['user_id']);
+
+    if (empty($cartItems)) {
+        echo "<div class='container mt-5 text-center'><h2>Giỏ hàng của bạn đang trống</h2><a href='product.php' class='btn btn-primary mt-3'>Tiếp tục mua sắm</a></div>";
+        exit;
+    }
+
+    // Build $cart and $products from database
+    foreach ($cartItems as $item) {
+        $cart[$item->product_id] = $item->quantity;
+        $products[] = (object)[
+            'id' => $item->product_id,
+            'name' => $item->name,
+            'price' => $item->price,
+            'image' => $item->image,
+            'quantity' => $item->quantity // assuming stock left
+        ];
+    }
+} else {
+    // Người chưa đăng nhập: dùng session
+    $cart = $_SESSION['cart'] ?? [];
+
+    if (empty($cart)) {
+        echo "<div class='container mt-5 text-center'><h2>Giỏ hàng của bạn đang trống</h2><a href='product.php' class='btn btn-primary mt-3'>Tiếp tục mua sắm</a></div>";
+        exit;
+    }
+
+    $productIds = array_keys($cart);
+    $products = $productModel->getProductsByIds($productIds);
 }
 
 // --- Tính tổng và kiểm tra tồn kho ---
@@ -49,11 +80,17 @@ if (!empty($insufficientItems)) {
 }
 
 // --- Mã giảm giá ---
-$availableDiscounts = $PDO->query("
-    SELECT code, discount_type, discount_value, expired_at
-    FROM discount_codes
-    WHERE (expired_at IS NULL OR expired_at > NOW()) AND used_count < max_usage
-")->fetchAll(PDO::FETCH_ASSOC);
+$availableDiscounts = $PDO->prepare("
+    SELECT d.code, d.discount_type, d.discount_value, d.expired_at
+    FROM discount_codes d
+    JOIN user_discount_codes s ON s.discount_code_id = d.id
+    WHERE s.user_id = ? AND s.used = 0
+        AND (d.expired_at IS NULL OR d.expired_at > NOW())
+        AND d.used_count < d.max_usage
+");
+$availableDiscounts->execute([$user['id']]);
+$availableDiscounts = $availableDiscounts->fetchAll(PDO::FETCH_ASSOC);
+
 
 // --- Xử lý khi người dùng đặt hàng ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -69,9 +106,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $totalAfterDiscount = $totalPrice;
 
     if ($discountCode) {
-        $stmt = $PDO->prepare("SELECT * FROM discount_codes WHERE code = ? AND (expired_at IS NULL OR expired_at > NOW()) AND used_count < max_usage");
-        $stmt->execute([$discountCode]);
-        $discount = $stmt->fetch();
+        $stmt = $PDO->prepare("
+    SELECT d.*, s.id as saved_id
+    FROM discount_codes d
+    JOIN user_discount_codes s ON s.discount_code_id = d.id
+    WHERE d.code = ? AND s.user_id = ? AND s.used = 0
+        AND (d.expired_at IS NULL OR d.expired_at > NOW())
+        AND d.used_count < d.max_usage
+");
+$stmt->execute([$discountCode, $user['id']]);
+$discount = $stmt->fetch();
+
 
         if ($discount) {
             $discountAmount = $discount['discount_type'] === 'percent'
@@ -101,6 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // --- Ghi nhận mã giảm giá ---
     if ($discountCode) {
         $PDO->prepare("UPDATE discount_codes SET used_count = used_count + 1 WHERE code = ?")->execute([$discountCode]);
+        $PDO->prepare("UPDATE user_discount_codes SET used = 1, used_at = NOW() WHERE id = ?")->execute([$discount['saved_id']]);
     }
 
     // --- Lưu sản phẩm và cập nhật tồn kho ---
@@ -119,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // --- Thanh toán COD hoặc khác ---
+    $cartItemModel->clear($user['id']);
     unset($_SESSION['cart']);
     header("Location: order_success.php?order_id=$orderId");
     exit;

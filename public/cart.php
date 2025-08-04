@@ -6,16 +6,29 @@ require_once __DIR__ . '/../src/bootstrap.php';
 use NL\Product;
 
 $productModel = new Product($PDO);
+$cart = [];
 
-// Lấy giỏ hàng từ session
-$cart = $_SESSION['cart'] ?? [];
+if (isset($_SESSION['user_id'])) {
+    $stmt = $PDO->prepare("SELECT product_id, quantity FROM cart_items WHERE user_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $item) {
+        $cart[$item['product_id']] = $item['quantity'];
+    }
+} else {
+    $cart = $_SESSION['cart'] ?? [];
+}
 
 if (empty($cart)) {
-    echo "<div class='container mt-5 text-center'><h2>Giỏ hàng của bạn đang trống</h2><a href='product.php' class='btn btn-primary mt-3'>Tiếp tục mua sắm</a></div>";
+    echo "
+    <div class='d-flex flex-column justify-content-center align-items-center text-center' style='min-height: 80vh;'>
+        <img src='/assets/img/empty-cart.png' alt='Giỏ hàng trống' style='max-width: 300px;'>
+        <h3 class='mt-2 fw-bold'>Giỏ hàng trống</h3>
+        <p>Không có sản phẩm nào trong giỏ hàng</p>
+        <a href='product.php' class='btn btn-primary mt-2 px-5 fw-bold'>Về trang mua sắm</a>
+    </div>";
     exit;
 }
 
-// Lấy thông tin sản phẩm từ giỏ hàng
 $productIds = array_keys($cart);
 $products = $productModel->getProductsByIds($productIds);
 $totalPrice = 0;
@@ -40,7 +53,9 @@ $totalPrice = 0;
                     <?php foreach ($products as $product): ?>
                         <?php
                         $quantity = $cart[$product->id];
-                        $subtotal = $product->price * $quantity;
+                        $available = (int)$product->quantity;
+                        $actualQty = min($quantity, $available);
+                        $subtotal = $product->price * $actualQty;
                         $totalPrice += $subtotal;
                         ?>
                         <tr data-id="<?= $product->id ?>">
@@ -48,7 +63,19 @@ $totalPrice = 0;
                             <td><?= htmlspecialchars($product->name); ?></td>
                             <td><?= number_format($product->price, 0, ',', '.'); ?> VNĐ</td>
                             <td>
-                                <input type="number" class="form-control quantity-input" value="<?= $quantity; ?>" min="1" style="width: 80px;" data-id="<?= $product->id ?>">
+                                <?php if ($available > 0): ?>
+                                    <input
+                                        type="number"
+                                        class="form-control quantity-input"
+                                        value="<?= $actualQty; ?>"
+                                        min="1"
+                                        max="<?= $available ?>"
+                                        data-id="<?= $product->id ?>"
+                                        data-max="<?= $available ?>"
+                                        style="width: 80px;">
+                                <?php else: ?>
+                                    <span class="text-danger fw-bold">Hết hàng</span>
+                                <?php endif; ?>
                             </td>
                             <td class="subtotal"><?= number_format($subtotal, 0, ',', '.'); ?> VNĐ</td>
                             <td>
@@ -75,27 +102,39 @@ $totalPrice = 0;
     </div>
 </main>
 
-<!-- ✅ Script tự động cập nhật số lượng -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
     const inputs = document.querySelectorAll('.quantity-input');
 
     inputs.forEach(input => {
-        input.addEventListener('input', function () {
+        input.addEventListener('input', function() {
             const productId = this.dataset.id;
+            const max = parseInt(this.dataset.max);
             let quantity = parseInt(this.value);
 
-            if (isNaN(quantity) || quantity < 1) {
-                this.value = 1; // Reset về 1
+            if (!Number.isInteger(quantity) || isNaN(quantity) || quantity < 1) {
+                quantity = 1;
+                this.value = 1;
                 Swal.fire({
                     icon: 'warning',
                     title: 'Số lượng không hợp lệ',
-                    text: 'Số lượng phải lớn hơn 0',
+                    text: 'Số lượng phải từ 1 trở lên.',
                     timer: 2000,
                     showConfirmButton: false
                 });
-                quantity = 1;
+            }
+
+            if (quantity > max) {
+                quantity = max;
+                this.value = max;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Vượt quá tồn kho',
+                    text: `Chỉ còn ${max} sản phẩm trong kho.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             }
 
             fetch('update-cart.php', {
@@ -114,11 +153,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     row.querySelector('.subtotal').textContent = data.subtotal_formatted + ' VNĐ';
                     document.getElementById('total-price').textContent = data.total_formatted + ' VNĐ';
                 } else {
-                    // Hiển thị lỗi từ server nếu có
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi',
-                        text: data.message || 'Đã xảy ra lỗi không xác định'
+                        text: data.message || 'Đã xảy ra lỗi.'
                     });
                 }
             });
@@ -126,4 +164,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 </script>
+
+<?php if (!empty($_SESSION['error'])): ?>
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi',
+            text: <?= json_encode($_SESSION['error']) ?>,
+            confirmButtonText: 'Đóng'
+        });
+    </script>
+    <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

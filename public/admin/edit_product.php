@@ -7,12 +7,12 @@ $product = new Product($PDO);
 $id = $_GET['id'];
 $productData = $product->getById($id);
 
-$queryCategories = "SELECT DISTINCT category FROM products";
+$queryCategories = "SELECT id, name FROM categories";
 $stmtCategories = $PDO->prepare($queryCategories);
 $stmtCategories->execute();
 $categories = $stmtCategories->fetchAll(PDO::FETCH_ASSOC);
 
-$queryBrands = "SELECT DISTINCT brand FROM products";
+$queryBrands = "SELECT id, name FROM brands";
 $stmtBrands = $PDO->prepare($queryBrands);
 $stmtBrands->execute();
 $brands = $stmtBrands->fetchAll(PDO::FETCH_ASSOC);
@@ -22,8 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = [
         ':name' => $_POST['name'],
         ':price' => $_POST['price'],
-        ':category' => $_POST['category'],
-        ':brand' => $_POST['brand'],
+        ':category_id' => $_POST['category_id'],
+        ':brand_id' => $_POST['brand_id'],
         ':description' => $_POST['description'],
         ':quantity' => $_POST['quantity'],
     ];
@@ -96,22 +96,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group">
                 <label for="category">Danh mục</label>
-                <select name="category" id="category" class="form-control" required>
+                <select name="category_id" id="category" class="form-control" required>
                     <option value="">Chọn danh mục</option>
                     <?php foreach ($categories as $category): ?>
-                        <option value="<?= htmlspecialchars($category['category']) ?>"><?= htmlspecialchars($category['category']) ?></option>
+                        <option value="<?= $category['id'] ?>" <?= ($category['id'] == $productData->category_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($category['name']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="brand">Thương hiệu</label>
-                <select name="brand" id="brand" class="form-control" required>
+                <select name="brand_id" id="brand" class="form-control" required>
                     <option value="">Chọn thương hiệu</option>
                     <?php foreach ($brands as $brand): ?>
-                        <option value="<?= htmlspecialchars($brand['brand']) ?>"><?= htmlspecialchars($brand['brand']) ?></option>
+                        <option value="<?= $brand['id'] ?>" <?= ($brand['id'] == $productData->brand_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($brand['name']) ?>
+                        </option>
                     <?php endforeach; ?>
                 </select>
+
             </div>
 
             <div class="form-group">
@@ -119,9 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="file" name="image" id="image" class="form-control">
             </div>
             <div class="form-group">
-        <label for="description">Mô tả</label>
-        <textarea name="description" id="description" class="form-control" required><?= htmlspecialchars($productData->description) ?></textarea>
-    </div>
-    <button type="submit" class="btn btn-primary">Cập nhật</button>
-    <a href="manage_products.php" class="btn btn-secondary">Quay lại</a>
-</form>
+                <label for="description">Mô tả</label>
+                <textarea name="description" id="description" class="form-control" required><?= htmlspecialchars($productData->description) ?></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Cập nhật</button>
+            <a href="manage_products.php" class="btn btn-secondary">Quay lại</a>
+        </form>

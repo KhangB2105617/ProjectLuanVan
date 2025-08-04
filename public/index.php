@@ -1,6 +1,18 @@
 <?php
 include_once __DIR__ . '/../src/partials/header.php';
 require_once __DIR__ . '/../src/bootstrap.php';
+// Lấy danh sách mã giảm giá toàn shop
+$stmt = $PDO->prepare("
+    SELECT * FROM discount_codes
+    WHERE 
+        (expired_at IS NULL OR expired_at >= NOW())
+        AND (max_usage IS NULL OR used_count < max_usage)
+    ORDER BY created_at DESC
+    LIMIT 5
+");
+$stmt->execute();
+$globalDiscounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Lấy sản phẩm nổi bật
 $sql = "SELECT * FROM products WHERE is_featured = 1";
 $stmt = $PDO->query($sql);
@@ -37,6 +49,36 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
         </div>
     </div>
+    <?php if (!empty($globalDiscounts)): ?>
+    <div class="container mt-4">
+        <h4 class="text-center text-danger mb-3">🎁 Ưu đãi toàn shop - Lưu ngay!</h4>
+        <div class="row justify-content-center">
+            <?php foreach ($globalDiscounts as $discount): ?>
+                <div class="col-md-4 col-lg-3 mb-3">
+                    <div class="card shadow-sm h-100 border border-warning">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-primary"><?= htmlspecialchars($discount['code']) ?></h5>
+                            <p class="card-text">
+                                <?= $discount['discount_type'] === 'percent'
+                                    ? $discount['discount_value'] . '% giảm'
+                                    : number_format($discount['discount_value'], 0, ',', '.') . 'đ giảm' ?>
+                                <br>
+                                <small class="text-muted">
+                                    <?= $discount['expired_at']
+                                        ? 'HSD: ' . date('d/m/Y', strtotime($discount['expired_at']))
+                                        : 'Không giới hạn' ?>
+                                </small>
+                            </p>
+                            <a href="/save_discount.php?id=<?= $discount['id'] ?>" class="btn btn-sm btn-success">
+                                <i class="fas fa-download"></i> Lưu mã
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
     <div class="container mt-5">
     <div class="flash-sale-container text-center">
         <img src="assets/img/flashsalebanner.png" class="img-fluid" alt="Flash Sale">
@@ -107,7 +149,32 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </section>
 </div>
 </main>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('.save-discount-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const codeId = this.dataset.codeId;
 
+            fetch('/save_discount.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'code_id=' + encodeURIComponent(codeId)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerText = "Đã lưu";
+                    this.disabled = true;
+                } else {
+                    alert(data.message || "Có lỗi xảy ra!");
+                }
+            });
+        });
+    });
+});
+</script>
 <?php
 require_once __DIR__ . '/../src/partials/footer.php';
 ?>

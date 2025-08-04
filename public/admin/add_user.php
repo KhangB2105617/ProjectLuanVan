@@ -51,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <select name="role" id="role" class="form-control" required>
                     <option value="customer">Khách hàng</option>
                     <option value="admin">Quản trị viên</option>
+                    <option value="staff">Nhân viên</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Thêm</button>

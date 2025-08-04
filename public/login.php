@@ -3,6 +3,7 @@ session_start();
 require_once __DIR__ . '/../src/bootstrap.php';
 
 use NL\User;
+use NL\CartItem;
 
 // Xử lý khi biểu mẫu được gửi
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -22,13 +23,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($userRecord && password_verify($password, $userRecord->password)) {
             // Đăng nhập thành công, lưu thông tin người dùng vào session
             $_SESSION['id'] = $userRecord->id;
+            $_SESSION['user_id'] = $userRecord->id;
             $_SESSION['username'] = $userRecord->username;
             $_SESSION['role'] = $userRecord->role;
             $_SESSION['customer_email'] = $userRecord->email; // Lưu email cho việc tra cứu đơn hàng sau này
+            $_SESSION['avatar'] = $userRecord->avatar ?? null;
+
+            $cartItemModel = new CartItem($PDO);
+
+            // Sau khi xác thực thành công
+            $userId = $userRecord->id;
+            $_SESSION['user_id'] = $userId;
+
+            // Chuyển session cart -> cart_items
+            if (!empty($_SESSION['cart'])) {
+                require_once __DIR__ . '/../src/bootstrap.php';
+                $cartItemModel = new \NL\CartItem($PDO);
+
+                foreach ($_SESSION['cart'] as $productId => $quantity) {
+                    $cartItemModel->add($userId, $productId, $quantity);
+                }
+
+                // Xóa giỏ hàng trong session sau khi chuyển
+                unset($_SESSION['cart']);
+            }
+
+
+            // Luôn khôi phục giỏ hàng từ DB để frontend có thể dùng session
+            $cartItems = $cartItemModel->getByUser($userRecord->id);
+            $_SESSION['cart'] = [];
+            foreach ($cartItems as $item) {
+                $_SESSION['cart'][$item->product_id] = $item->quantity;
+            }
 
             // Chuyển hướng theo vai trò
             if ($userRecord->role === 'admin') {
                 header("Location: admin/settingadmin.php");
+            } elseif ($userRecord->role === 'staff') {
+                header("Location: admin/staff_dashboard.php");
             } elseif ($userRecord->role === 'customer') {
                 header("Location: index.php"); // Trang chủ cho khách hàng
             }
@@ -41,7 +73,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -51,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Đăng Nhập</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-       body {
+        body {
             background: linear-gradient(to right, #141e30, #243b55);
             color: white;
             height: 100vh;
@@ -121,28 +152,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <form action="" method="post">
             <div class="form-group">
-                <input 
-                    type="text" 
-                    id="email_or_username" 
-                    name="email_or_username" 
-                    class="form-control" 
-                    placeholder="Tên đăng nhập hoặc Email" 
-                    value="<?= isset($emailOrUsername) ? htmlspecialchars($emailOrUsername) : '' ?>" 
+                <input
+                    type="text"
+                    id="email_or_username"
+                    name="email_or_username"
+                    class="form-control"
+                    placeholder="Tên đăng nhập hoặc Email"
+                    value="<?= isset($emailOrUsername) ? htmlspecialchars($emailOrUsername) : '' ?>"
                     required>
             </div>
             <div class="form-group">
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    class="form-control" 
-                    placeholder="Mật khẩu" 
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Mật khẩu"
                     required>
             </div>
             <button type="submit" class="btn btn-primary btn-block">Đăng Nhập</button>
             <p class="mt-3 text-center">
-            Chưa có tài khoản? <a href="register.php" class="text-white font-weight-bold">Đăng ký ngay</a>
-        </p>
+                Chưa có tài khoản? <a href="register.php" class="text-white font-weight-bold">Đăng ký ngay</a>
+            </p>
         </form>
     </div>
 </body>

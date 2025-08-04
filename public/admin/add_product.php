@@ -2,33 +2,30 @@
 require_once __DIR__ . '/../../src/bootstrap.php';
 
 use NL\Product;
+use NL\Category;
+use NL\Brand;
 
 $product = new Product($PDO);
+$categoryModel = new Category($PDO);
+$brandModel = new Brand($PDO);
 
-$queryCategories = "SELECT DISTINCT category FROM products";
-$stmtCategories = $PDO->prepare($queryCategories);
-$stmtCategories->execute();
-$categories = $stmtCategories->fetchAll(PDO::FETCH_ASSOC);
-
-$queryBrands = "SELECT DISTINCT brand FROM products";
-$stmtBrands = $PDO->prepare($queryBrands);
-$stmtBrands->execute();
-$brands = $stmtBrands->fetchAll(PDO::FETCH_ASSOC);
+$categories = $categoryModel->getAll();
+$brands = $brandModel->getAll();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Lấy dữ liệu từ biểu mẫu
     $name = $_POST['name'];
     $price = $_POST['price'];
-    $category = $_POST['category'];
-    $brand = $_POST['brand'];
+    $categoryId = $_POST['category_id'];
+    $brandId = $_POST['brand_id'];
     $description = $_POST['description'];
     $quantity = $_POST['quantity'];
 
     $data = [
         ':name' => $name,
         ':price' => $price,
-        ':category' => $category,
-        ':brand' => $brand,
+        ':category_id' => $categoryId,
+        ':brand_id' => $brandId,
         ':description' => $description,
         ':quantity' => $quantity,
     ];
@@ -36,38 +33,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Xử lý hình ảnh
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $image = $_FILES['image'];
-
-        // Tạo tên tệp mới để tránh trùng lặp
         $imageName = uniqid() . '-' . basename($image['name']);
-        $uploadDir = __DIR__ . '/../../public/assets/img/';  // Đảm bảo lưu trong thư mục img
+        $uploadDir = __DIR__ . '/../../public/assets/img/';
 
-        // Tạo thư mục nếu chưa tồn tại
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
 
-        // Di chuyển tệp từ thư mục tạm thời đến thư mục đích
         $imagePath = $uploadDir . $imageName;
         if (move_uploaded_file($image['tmp_name'], $imagePath)) {
-            // Lưu đường dẫn hình ảnh vào cơ sở dữ liệu
-            $data[':image'] = '' . $imageName;
+            $data[':image'] = $imageName;
         } else {
             $error = "Lỗi khi tải lên hình ảnh.";
         }
     } else {
-        // Nếu không có hình ảnh, để giá trị là null
         $data[':image'] = null;
         $error = "Vui lòng chọn một hình ảnh.";
     }
 
-    // Lưu sản phẩm vào cơ sở dữ liệu
+    // Lưu sản phẩm
     if (!isset($error) && $product->create($data)) {
         header("Location: manage_products.php?success=1");
         exit();
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -100,20 +90,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group">
                 <label for="category">Danh mục</label>
-                <select name="category" id="category" class="form-control" required>
+                <select name="category_id" id="category" class="form-control" required>
                     <option value="">Chọn danh mục</option>
                     <?php foreach ($categories as $category): ?>
-                        <option value="<?= htmlspecialchars($category['category']) ?>"><?= htmlspecialchars($category['category']) ?></option>
+                        <option value="<?= $category->id ?>"><?= htmlspecialchars($category->name) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="brand">Thương hiệu</label>
-                <select name="brand" id="brand" class="form-control" required>
+                <select name="brand_id" id="brand" class="form-control" required>
                     <option value="">Chọn thương hiệu</option>
                     <?php foreach ($brands as $brand): ?>
-                        <option value="<?= htmlspecialchars($brand['brand']) ?>"><?= htmlspecialchars($brand['brand']) ?></option>
+                        <option value="<?= $brand->id ?>"><?= htmlspecialchars($brand->name) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>

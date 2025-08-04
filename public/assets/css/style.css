@@ -86,6 +86,9 @@ header {
 .card {
     transition: transform 0.2s, box-shadow 0.2s;
     border-radius: 10px;
+    height: 100%; /* 👈 Thêm dòng này */
+    display: flex;
+    flex-direction: column;
 }
 
 .card:hover {
@@ -101,6 +104,7 @@ header {
 
 .card-title {
     font-size: 1rem;
+    min-height: 2.5em; /* Khoảng 2 dòng */
 }
 /* === PRODUCT IMAGE === */
 .product-image {
@@ -126,13 +130,19 @@ header {
 }
 
 /* Card Content */
-#card-body {
-    min-height: 150px;
+.card-body {
+    flex: 1; /* Cho phần thân chiếm hết chiều cao còn lại */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
-
+/* === Đánh giá sao trong card === */
+.rating-stars i {
+    font-size: 0.9rem;
+}
+.rating-stars small {
+    font-size: 0.8rem;
+}
 /* AUTH LINK */
 .auth-link:hover {
     color: #007bff !important;

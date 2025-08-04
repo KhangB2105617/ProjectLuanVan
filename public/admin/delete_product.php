@@ -6,7 +6,7 @@ $product = new Product($PDO);
 $id = $_GET['id'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($product->delete($id)) {
+    if ($product->Softdelete($id)) {
         header("Location: manage_products.php?success=1");
         exit();
     } else {

@@ -9,6 +9,7 @@ $productId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 $productModel = new Product($PDO);
 $product = $productModel->getById($productId); // Lấy thông tin sản phẩm theo ID
+$productImages = $productModel->getImages($productId);
 
 // Nếu sản phẩm không tồn tại, hiển thị lỗi
 if (!$product) {
@@ -42,31 +43,89 @@ foreach ($reviews as $review) {
     <main class="content">
         <div class="container mt-4 mb-5">
             <div class="row">
-                <!-- Hình ảnh sản phẩm -->
-                <div class="col-md-4 d-flex justify-content-center">
-                    <img src="/assets/img/<?= htmlspecialchars($product->image); ?>" class="img-fluid rounded shadow"
-                        alt="<?= htmlspecialchars($product->name); ?>" style="max-width: 100%; height: auto;">
+                <div class="col-md-4 d-flex flex-column align-items-center">
+                    <div class="position-relative w-100 mb-3">
+                        <img id="mainImage" src="/assets/img/<?= htmlspecialchars($product->image); ?>"
+                            class="img-fluid rounded shadow"
+                            alt="<?= htmlspecialchars($product->name); ?>"
+                            style="max-width: 100%; height: auto;">
+
+                        <!-- Nút mũi tên -->
+                        <button onclick="prevImage()" class="btn btn-light position-absolute top-50 start-0 translate-middle-y">
+                            &#10094;
+                        </button>
+                        <button onclick="nextImage()" class="btn btn-light position-absolute top-50 end-0 translate-middle-y">
+                            &#10095;
+                        </button>
+                    </div>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <!-- Thumbnail ảnh chính -->
+                        <img src="/assets/img/<?= htmlspecialchars($product->image); ?>"
+                            class="img-thumbnail" style="height: 60px; width: auto; cursor: pointer;"
+                            onclick="showImage(0)">
+                        <?php foreach ($productImages as $index => $img): ?>
+                            <img src="/assets/img/<?= htmlspecialchars($img); ?>"
+                                class="img-thumbnail" style="height: 60px; width: auto; cursor: pointer;"
+                                onclick="showImage(<?= $index + 1 ?>)">
+                        <?php endforeach; ?>
+                    </div>
                 </div>
 
-                <!-- Thông tin sản phẩm -->
+                <script>
+                    const imagePaths = [
+                        "<?= htmlspecialchars($product->image); ?>",
+                        <?php foreach ($productImages as $img): ?> "<?= htmlspecialchars($img); ?>",
+                        <?php endforeach; ?>
+                    ];
+                    let currentIndex = 0;
+
+                    function showImage(index) {
+                        if (index >= 0 && index < imagePaths.length) {
+                            currentIndex = index;
+                            document.getElementById('mainImage').src = "/assets/img/" + imagePaths[index];
+                        }
+                    }
+
+                    function prevImage() {
+                        currentIndex = (currentIndex - 1 + imagePaths.length) % imagePaths.length;
+                        showImage(currentIndex);
+                    }
+
+                    function nextImage() {
+                        currentIndex = (currentIndex + 1) % imagePaths.length;
+                        showImage(currentIndex);
+                    }
+                </script>
+
                 <div class="col-md-8">
                     <h1 class="mb-2"><?= htmlspecialchars($product->name); ?></h1>
-                    <p class="text-muted"><?= htmlspecialchars($product->category); ?></p>
+                    <p class="text-muted"><?= htmlspecialchars($product->category_name); ?></p>
                     <p class="text-muted text-decoration-line-through mb-0">
                         <?= number_format($product->original_price, 0, ',', '.'); ?>đ
                     </p>
                     <p class="price text-danger fs-4 fw-bold">
                         <?= number_format($product->price, 0, ',', '.'); ?>đ
                     </p>
+                    <p class="text-success">Kho còn: <strong><?= (int)$product->quantity; ?></strong> sản phẩm</p>
                     <p><?= nl2br(htmlspecialchars($product->description)); ?></p>
 
                     <div class="mt-4 d-flex gap-2">
-                        <form method="post" action="update-cart.php" onsubmit="return checkLogin(event);">
-                            <input type="hidden" name="action" value="add">
-                            <input type="hidden" name="product_id" value="<?= $product->id; ?>">
-                            <input type="hidden" name="quantity" value="1">
-                            <button type="submit" class="btn btn-primary">🛒 Thêm vào giỏ hàng</button>
-                        </form>
+                        <?php if ((int)$product->quantity > 0): ?>
+                            <form method="post" action="update-cart.php" onsubmit="return checkAllConditions(event);">
+                                <input type="hidden" name="action" value="add">
+                                <input type="hidden" name="product_id" value="<?= $product->id; ?>">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label for="quantity" class="form-label mb-0">Số lượng:</label>
+                                        <input type="number" id="quantity" name="quantity" value="1" class="form-control" style="width: 80px;" min="1" max="<?= (int)$product->quantity ?>" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Thêm vào giỏ hàng</button>
+                                </div>
+                            </form>
+                        <?php else: ?>
+                            <button class="btn btn-secondary" disabled>Hết hàng</button>
+                        <?php endif; ?>
 
                         <script>
                             function checkLogin(event) {
@@ -75,24 +134,38 @@ foreach ($reviews as $review) {
                                     event.preventDefault();
                                     alert("Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng!");
                                     window.location.href = "login.php";
+                                    return false;
                                 }
+                                return true;
+                            }
+
+                            function checkQuantity() {
+                                const quantity = <?= (int)$product->quantity ?>;
+                                if (quantity <= 0) {
+                                    alert("Sản phẩm đã hết hàng. Vui lòng chọn sản phẩm khác.");
+                                    return false;
+                                }
+                                return true;
+                            }
+
+                            function checkAllConditions(event) {
+                                if (!checkLogin(event)) return false;
+                                if (!checkQuantity()) {
+                                    event.preventDefault();
+                                    return false;
+                                }
+                                return true;
                             }
                         </script>
+
                         <?php
                         $canReview = false;
-
                         if ($isLoggedIn && isset($_SESSION['username'])) {
                             $currentUsername = $_SESSION['username'];
-                            $productName = $product->name;
-
-                            $stmt = $PDO->prepare("
-                                SELECT COUNT(*) FROM orders 
-                                WHERE username = ? AND product_name = ? AND status = 'Đã giao'
-                                ");
-                            $stmt->execute([$currentUsername, $productName]);
+                            $stmt = $PDO->prepare("SELECT COUNT(*) FROM orders o JOIN order_items oi ON o.id = oi.order_id WHERE o.username = ? AND oi.product_id = ? AND o.status = 'Đã giao'");
+                            $stmt->execute([$currentUsername, $productId]);
                             $canReview = $stmt->fetchColumn() > 0;
                         }
-
                         ?>
 
                         <a href="product.php" class="btn btn-secondary">⬅️ Quay lại</a>
@@ -114,7 +187,7 @@ foreach ($reviews as $review) {
                 <table class="table border-0">
                     <tbody>
                         <tr class="bg-light">
-                            <td class="fw-bold">Thương hiệu: <?= htmlspecialchars($product->brand); ?></td>
+                            <td class="fw-bold">Thương hiệu: <?= htmlspecialchars($product->brand_name); ?></td>
                             <td class="fw-bold">Xuất xứ: Nhật</td>
                         </tr>
                         <tr>
@@ -204,11 +277,21 @@ foreach ($reviews as $review) {
             <div class="d-flex justify-content-between align-items-center mb-3" style="max-width: 50%;">
                 <div class="rating-summary d-flex align-items-center">
                     <h2 class="me-3 text-warning" style="font-size: 1.5rem;"> <?= number_format($averageRating, 1); ?> </h2>
-                    <div style="font-size: 1rem;">
-                        <span class="text-warning"> <?= str_repeat('⭐', floor($averageRating)); ?> </span>
-                        <?php if ($averageRating - floor($averageRating) >= 0.5): ?>
-                            <span class="text-warning">★</span>
+                    <div style="font-size: 1rem;" class="text-warning">
+                        <?php
+                        $fullStars = floor($averageRating);
+                        $halfStar = ($averageRating - $fullStars) >= 0.5;
+                        $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                        ?>
+                        <?php for ($i = 0; $i < $fullStars; $i++): ?>
+                            <i class="fas fa-star"></i>
+                        <?php endfor; ?>
+                        <?php if ($halfStar): ?>
+                            <i class="fas fa-star-half-alt"></i>
                         <?php endif; ?>
+                        <?php for ($i = 0; $i < $emptyStars; $i++): ?>
+                            <i class="far fa-star"></i>
+                        <?php endfor; ?>
                     </div>
                 </div>
                 <?php if ($canReview): ?>
@@ -236,7 +319,14 @@ foreach ($reviews as $review) {
                     <?php foreach ($reviews as $review): ?>
                         <div class="review border p-3 mb-3 rounded shadow-sm">
                             <strong><?= htmlspecialchars($review['customer_name']); ?></strong> -
-                            <span><?= str_repeat('⭐', $review['rating']); ?></span>
+                            <span class="text-warning">
+                                <?php
+                                $full = (int)$review['rating'];
+                                for ($i = 0; $i < $full; $i++) echo '<i class="fas fa-star"></i>';
+                                for ($i = $full; $i < 5; $i++) echo '<i class="far fa-star"></i>';
+                                ?>
+                            </span>
+
                             <p><?= nl2br(htmlspecialchars($review['comment'])); ?></p>
                             <small class="text-muted"><?= $review['created_at']; ?></small>
                         </div>
@@ -277,17 +367,25 @@ foreach ($reviews as $review) {
         </div>
 
         <script>
-            document.getElementById("toggleReviewForm").addEventListener("click", function() {
-                document.getElementById("reviewForm").style.display = "block";
-                document.getElementById("overlay").style.display = "block";
-            });
-            document.getElementById("overlay").addEventListener("click", function() {
-                document.getElementById("reviewForm").style.display = "none";
-                document.getElementById("overlay").style.display = "none";
-            });
+            const toggleBtn = document.getElementById("toggleReviewForm");
+            const reviewForm = document.getElementById("reviewForm");
+            const overlay = document.getElementById("overlay");
+
+            if (toggleBtn && reviewForm && overlay) {
+                toggleBtn.addEventListener("click", function() {
+                    reviewForm.style.display = "block";
+                    overlay.style.display = "block";
+                });
+
+                overlay.addEventListener("click", function() {
+                    reviewForm.style.display = "none";
+                    overlay.style.display = "none";
+                });
+            }
         </script>
 
     </main>
 </div>
 
 <?php include_once __DIR__ . '/../src/partials/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

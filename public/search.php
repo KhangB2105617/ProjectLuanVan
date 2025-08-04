@@ -22,11 +22,11 @@ include_once __DIR__ . '/../src/partials/header.php';
             <div class="row">
                 <?php if (count($products) > 0): ?>
                     <?php foreach ($products as $product): ?>
-                        <div class="col-lg-2 col-md-4 col-sm-6 mb-4 d-flex"> <!-- 5 sản phẩm trên 1 hàng -->
+                        <div class="col-lg-2 col-md-4 col-sm-6 mb-4 d-flex">
                         <a href="<?= '/product-details.php?id=' . $product->id; ?>" class="text-decoration-none text-dark w-100">
-                            <div class="card w-100 shadow-sm border rounded-3"> <!-- Thêm bóng và viền bo -->
+                            <div class="card w-100 shadow-sm border rounded-3">
                                 <img src="/assets/img/<?= htmlspecialchars($product->image); ?>" class="card-img-top" alt="<?= htmlspecialchars($product->name); ?>">
-                                <div class="card-body p-2"> <!-- Căn giữa nội dung -->
+                                <div class="card-body p-2">
                                     <h5 class="card-title" style="white-space: normal; overflow: visible;">
                                         <?= htmlspecialchars($product->name); ?>
                                     </h5>

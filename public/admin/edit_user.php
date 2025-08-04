@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../src/bootstrap.php';
+
 use NL\User;
 
 $user = new User($PDO);
@@ -8,10 +9,14 @@ $userData = $user->getById($id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = [
-        ':username' => $_POST['username'],
-        ':email' => $_POST['email'],
-        ':role' => $_POST['role']
+        'username' => $_POST['username'],
+        'email' => $_POST['email'],
+        'role' => $_POST['role'],
+        'address' => $_POST['address'] ?? '',
+        'phone' => $_POST['phone'] ?? '',
+        'birthday' => $_POST['birthday'] ?? null
     ];
+
     if ($user->update($id, $data)) {
         header("Location: manage_users.php?success=1");
         exit();
@@ -23,12 +28,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sửa người dùng</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
+
 <body>
     <div class="container mt-4">
         <h1>Sửa người dùng</h1>
@@ -45,10 +52,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="email" name="email" id="email" class="form-control" value="<?= htmlspecialchars($userData->email) ?>" required>
             </div>
             <div class="form-group">
+                <label for="address">Địa chỉ</label>
+                <input type="text" name="address" id="address" class="form-control" value="<?= htmlspecialchars($userData->address) ?>">
+            </div>
+            <div class="form-group">
+                <label for="phone">Số điện thoại</label>
+                <input type="text" name="phone" id="phone" class="form-control" value="<?= htmlspecialchars($userData->phone) ?>">
+            </div>
+            <div class="form-group">
+                <label for="birthday">Ngày sinh</label>
+                <input type="date" name="birthday" id="birthday" class="form-control" value="<?= htmlspecialchars($userData->birthday) ?>">
+            </div>
+
+            <div class="form-group">
                 <label for="role">Vai trò</label>
-                <select name="role" id="role" class="form-control" required>
-                    <option value="customer" <?= $userData->role === 'customer' ? 'selected' : '' ?>>Khách hàng</option>
-                    <option value="admin" <?= $userData->role === 'admin' ? 'selected' : '' ?>>Quản trị viên</option>
+                <select name="role" class="form-select">
+                    <option value="admin" <?= ($user->role === 'admin') ? 'selected' : '' ?>>Quản trị viên</option>
+                    <option value="staff" <?= ($user->role === 'staff') ? 'selected' : '' ?>>Nhân viên</option>
+                    <option value="customer" <?= ($user->role === 'customer') ? 'selected' : '' ?>>Khách hàng</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-primary">Cập nhật</button>
@@ -56,4 +77,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </body>
+
 </html>

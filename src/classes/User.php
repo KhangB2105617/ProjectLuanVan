@@ -12,6 +12,10 @@ class User
     public $username;
     public $password;
     public $email;
+    public $gender;
+    public $address;
+    public $phone;
+    public $birthday;
     public $created_at;
     public $role;
     public $avatar;
@@ -26,6 +30,10 @@ class User
         $this->username = $data['username'] ?? '';
         $this->password = $data['password'] ?? '';
         $this->email = $data['email'] ?? '';
+        $this->gender = $row['gender'] ?? null;
+        $this->address = $data['address'] ?? '';
+        $this->phone = $data['phone'] ?? '';
+        $this->birthday = $data['birthday'] ?? null;
         $this->role = $data['role'] ?? 'customer';
         $this->avatar = $data['avatar'] ?? '';
         return $this;
@@ -59,7 +67,7 @@ class User
     // Hàm kiểm tra email đã tồn tại hay chưa
     public function emailExists(string $email): bool
     {
-        $statement = $this->db->prepare('SELECT COUNT(*) FROM User WHERE email = :email');
+        $statement = $this->db->prepare('SELECT COUNT(*) FROM Users WHERE email = :email');
         $statement->execute(['email' => $email]);
         return $statement->fetchColumn() > 0;
     }
@@ -67,7 +75,7 @@ class User
     public function all(): array
     {
         $User = [];
-        $statement = $this->db->prepare('SELECT * FROM User');
+        $statement = $this->db->prepare('SELECT * FROM Users');
         $statement->execute();
         while ($row = $statement->fetch()) {
             $contact = new User($this->db);
@@ -83,15 +91,20 @@ class User
         $this->username = $row['username'];
         $this->password = $row['password'];
         $this->email = $row['email'];
+        $this->gender = $row['gender'] ?? null;
+        $this->address = $row['address'] ?? '';
+        $this->phone = $row['phone'] ?? '';
+        $this->birthday = $row['birthday'] ?? null;
         $this->role = $row['role'];
         $this->created_at = $row['created_at'];
         $this->avatar = $row['avatar'];
+
         return $this;
     }
 
     public function count(): int
     {
-        $statement = $this->db->prepare('SELECT COUNT(*) FROM User');
+        $statement = $this->db->prepare('SELECT COUNT(*) FROM Users');
         $statement->execute();
         return $statement->fetchColumn();
     }
@@ -99,7 +112,7 @@ class User
     public function paginate(int $offset = 0, int $limit = 10): array
     {
         $User = [];
-        $statement = $this->db->prepare('SELECT * FROM User LIMIT :offset,:limit');
+        $statement = $this->db->prepare('SELECT * FROM Users LIMIT :offset,:limit');
         $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
         $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
         $statement->execute();
@@ -113,62 +126,52 @@ class User
 
     public function save(): bool
     {
-        $result = false;
         if ($this->id >= 0) {
-            if (empty($this->avatar)) {
-                $statement = $this->db->prepare(
-                    'UPDATE User 
-                SET username = :username, password = :password, email = :email, role = :role 
-                WHERE id = :id'
-                );
-                $result = $statement->execute([
-                    'username' => $this->username,
-                    'password' => $this->password,
-                    'email' => $this->email,
-                    'role' => $this->role,
-                    'id' => $this->id
-                ]);
-            } else {
-                $statement = $this->db->prepare(
-                    'UPDATE User 
-                SET username = :username, password = :password, email = :email, role = :role, avatar = :avatar 
-                WHERE id = :id'
-                );
-                $result = $statement->execute([
-                    'username' => $this->username,
-                    'password' => $this->password,
-                    'email' => $this->email,
-                    'role' => $this->role,
-                    'avatar' => $this->avatar,
-                    'id' => $this->id
-                ]);
-            }
-        } else {
-            // Gán giá trị mặc định cho role là 'customer' nếu không có role được chỉ định
-            $role = $this->role ?? 'customer';
+            $sql = 'UPDATE users SET username = :username, password = :password, email = :email, address = :address, phone = :phone, birthday = :birthday, role = :role';
+            $params = [
+                'username' => $this->username,
+                'password' => $this->password,
+                'email' => $this->email,
+                'address' => $this->address,
+                'phone' => $this->phone,
+                'birthday' => $this->birthday,
+                'role' => $this->role,
+                'id' => $this->id
+            ];
 
-            $statement = $this->db->prepare(
-                'INSERT INTO User (username, password, email, role, avatar, created_at) 
-             VALUES (:username, :password, :email, :role, :avatar, NOW())'
-            );
-            $result = $statement->execute([
+            if (!empty($this->avatar)) {
+                $sql .= ', avatar = :avatar';
+                $params['avatar'] = $this->avatar;
+            }
+
+            $sql .= ' WHERE id = :id';
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
+        } else {
+            $stmt = $this->db->prepare('
+                INSERT INTO users (username, password, email, address, phone, birthday, role, avatar, created_at) 
+                VALUES (:username, :password, :email, :address, :phone, :birthday, :role, :avatar, NOW())
+            ');
+            $result = $stmt->execute([
                 'username' => $this->username,
                 'password' => password_hash($this->password, PASSWORD_DEFAULT),
                 'email' => $this->email,
-                'role' => $role,
+                'address' => $this->address,
+                'phone' => $this->phone,
+                'birthday' => $this->birthday,
+                'role' => $this->role,
                 'avatar' => $this->avatar
             ]);
-
             if ($result) {
                 $this->id = $this->db->lastInsertId();
             }
+            return $result;
         }
-        return $result;
     }
 
     public function find(int $id): ?User
     {
-        $statement = $this->db->prepare('select * from User where id = :id');
+        $statement = $this->db->prepare('select * from Users where id = :id');
         $statement->execute(['id' => $id]);
         if ($row = $statement->fetch()) {
             $this->fillFromDbRow($row);
@@ -176,75 +179,105 @@ class User
         }
         return null;
     }
-    public function findByEmailOrUsername($emailOrUsername)
+    public function findByEmailOrUsername($emailOrUsername): ?User
     {
-        $stmt = $this->db->prepare("SELECT * FROM user WHERE email = :emailOrUsername OR username = :emailOrUsername LIMIT 1");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :emailOrUsername OR username = :emailOrUsername LIMIT 1");
         $stmt->execute([':emailOrUsername' => $emailOrUsername]);
-        return $stmt->fetchObject();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($row) {
+            $user = new User($this->db);
+            $user->fillFromDbRow($row);
+            return $user;
+        }
+
+        return null;
     }
-
-
     public function getAll()
     {
-        $stmt = $this->db->query("SELECT * FROM user");
+        $stmt = $this->db->query("SELECT * FROM users");
         $stmt->setFetchMode(\PDO::FETCH_OBJ);
         return $stmt->fetchAll();
     }
 
     // Lấy chi tiết người dùng theo ID
-    public function getById($id)
+    public function getById($id): ?User
     {
-        $stmt = $this->db->prepare("SELECT * FROM user WHERE id = :id");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE id = :id");
         $stmt->execute([':id' => $id]);
-        return $stmt->fetch(\PDO::FETCH_OBJ);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if ($row) {
+            $user = new User($this->db);
+            $user->fillFromDbRow($row);
+            return $user;
+        }
+
+        return null;
     }
 
     // Thêm người dùng mới
     public function create($data)
     {
-        $stmt = $this->db->prepare("INSERT INTO user (username, email, password, role) VALUES (:username, :email, :password, :role)");
+        $stmt = $this->db->prepare("INSERT INTO users (username, email, password, role) VALUES (:username, :email, :password, :role)");
         return $stmt->execute($data);
     }
 
     // Sửa thông tin người dùng
     public function update($id, $data)
     {
-        $stmt = $this->db->prepare("UPDATE user SET username = :username, email = :email, role = :role WHERE id = :id");
-        $data[':id'] = $id;
+        $sql = "UPDATE users SET username = :username, email = :email, role = :role, address = :address, phone = :phone, birthday = :birthday WHERE id = :id";
+        $data['id'] = $id;
+        $stmt = $this->db->prepare($sql);
         return $stmt->execute($data);
     }
 
     // Xóa người dùng
     public function delete($id)
     {
-        $stmt = $this->db->prepare("DELETE FROM user WHERE id = :id");
+        $stmt = $this->db->prepare("DELETE FROM users WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
     public function updateProfile($id, $data)
-{
-    $sql = "UPDATE user SET username = :username, email = :email, gender = :gender";
-    
-    $params = [
-        ':username' => $data['username'],
-        ':email' => $data['email'],
-        ':gender' => $data['gender'], // Thêm giới tính
-        ':id' => $id
-    ];
+    {
+        $sql = "UPDATE users SET username = :username, email = :email, address = :address, phone = :phone, birthday = :birthday, gender = :gender";
+        $params = [
+            ':username' => $data['username'],
+            ':email' => $data['email'],
+            ':address' => $data['address'],
+            ':phone' => $data['phone'],
+            ':birthday' => $data['birthday'] ?? null,
+            ':gender' => $data['gender'] ?? null,
+            ':id' => $id
+        ];
 
-    if (!empty($data['password'])) {
-        $sql .= ", password = :password";
-        $params[':password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        if (!empty($data['password'])) {
+            $sql .= ", password = :password";
+            $params[':password'] = ($data['password']);
+        }
+
+        if (!empty($data['avatar'])) {
+            $sql .= ", avatar = :avatar";
+            $params[':avatar'] = $data['avatar'];
+        }
+
+        $sql .= " WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
     }
 
-    if (!empty($data['avatar'])) {
-        $sql .= ", avatar = :avatar";
-        $params[':avatar'] = $data['avatar'];
+    public function getByUsername($username)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->execute([$username]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
-    $sql .= " WHERE id = :id";
-
-    $stmt = $this->db->prepare($sql);
-    return $stmt->execute($params);
-}
-
+    public function updatePassword($id, $newPassword): bool
+    {
+        $stmt = $this->db->prepare("UPDATE users SET password = :password WHERE id = :id");
+        return $stmt->execute([
+            ':password' => password_hash($newPassword, PASSWORD_DEFAULT),
+            ':id' => $id
+        ]);
+    }
 }
