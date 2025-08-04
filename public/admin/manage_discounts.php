@@ -6,7 +6,7 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 $pageTitle = "Quản lý mã giảm giá";
 
-$stmt = $PDO->query("SELECT * FROM discount_codes ORDER BY created_at DESC");
+$stmt = $PDO->query("SELECT * FROM discount_codes ORDER BY created_at ASC");
 $discounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 include 'includes/header.php';

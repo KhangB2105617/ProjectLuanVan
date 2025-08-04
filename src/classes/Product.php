@@ -22,11 +22,24 @@ class Product
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN categories c ON p.category_id = c.id
             WHERE p.deleted_at IS NULL
-            ORDER BY p.created_at DESC
+            ORDER BY p.created_at ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
+
+    public function getVisibleProducts()
+{
+    $stmt = $this->db->prepare("
+        SELECT p.*, b.name AS brand_name, c.name AS category_name
+        FROM products p
+        JOIN brands b ON p.brand_id = b.id
+        JOIN categories c ON p.category_id = c.id
+        WHERE p.deleted_at IS NULL AND p.is_visible = 1
+    ");
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
+}
 
     // Lấy chi tiết sản phẩm theo id (có tên thương hiệu và danh mục)
     public function getById($id)
@@ -36,7 +49,7 @@ class Product
             FROM products p
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.id = :id
+            WHERE p.id = :id AND p.deleted_at IS NULL AND p.is_visible = 1
         ");
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         $stmt->execute();
@@ -46,7 +59,8 @@ class Product
     // Lấy sản phẩm theo danh mục ID
     public function getProductsByCategoryId($categoryId)
     {
-        $stmt = $this->db->prepare("SELECT * FROM products WHERE category_id = :category_id");
+        $stmt = $this->db->prepare("SELECT * FROM products WHERE category_id = :category_id  AND deleted_at IS NULL 
+        AND is_visible = 1 ");
         $stmt->bindParam(':category_id', $categoryId, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_OBJ);
@@ -60,30 +74,31 @@ class Product
 
     // Lấy sản phẩm theo thương hiệu ID
     public function getProductsByBrand($brandId, $sortOrder = null)
-{
-    $order = "ORDER BY p.price ASC";
-    if ($sortOrder === 'desc') {
-        $order = "ORDER BY p.price DESC";
-    }
+    {
+        $order = "ORDER BY p.price ASC";
+        if ($sortOrder === 'desc') {
+            $order = "ORDER BY p.price DESC";
+        }
 
-    $stmt = $this->db->prepare("
+        $stmt = $this->db->prepare("
         SELECT p.*, b.name AS brand_name,
         (SELECT AVG(r.rating) FROM reviews r WHERE r.product_id = p.id) AS average_rating,
         (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS review_count
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
-        WHERE p.brand_id = :brand_id AND p.deleted_at IS NULL
+        WHERE p.brand_id = :brand_id AND p.deleted_at IS NULL AND p.is_visible = 1
         $order
     ");
-    $stmt->execute(['brand_id' => $brandId]);
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-}
+        $stmt->execute(['brand_id' => $brandId]);
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
 
     // Lấy sản phẩm theo danh sách ID
     public function getProductsByIds($ids)
     {
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $this->db->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
+        $stmt = $this->db->prepare("SELECT * FROM products WHERE id IN ($placeholders) AND deleted_at IS NULL 
+    AND is_visible = 1");
         $stmt->execute($ids);
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
@@ -150,11 +165,11 @@ class Product
     }
 
     public function getImages($productId)
-{
-    $stmt = $this->db->prepare("SELECT image_path FROM product_images WHERE product_id = ?");
-    $stmt->execute([$productId]);
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
-}
+    {
+        $stmt = $this->db->prepare("SELECT image_path FROM product_images WHERE product_id = ?");
+        $stmt->execute([$productId]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 
     // Sắp xếp sản phẩm
     public function getAllSorted($sortOrder = null)
@@ -173,7 +188,7 @@ class Product
             FROM products p
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.deleted_at IS NULL
+            WHERE p.deleted_at IS NULL AND p.is_visible = 1
             $order
         ");
         return $stmt->fetchAll(PDO::FETCH_OBJ);
@@ -209,9 +224,8 @@ class Product
 
         foreach ($allProducts as $product) {
             $nameNorm = mb_strtolower($this->removeVietnameseTones($product->name), 'UTF-8');
-            $descNorm = mb_strtolower($this->removeVietnameseTones($product->description), 'UTF-8');
 
-            if (strpos($nameNorm, $normalized) !== false || strpos($descNorm, $normalized) !== false) {
+            if (strpos($nameNorm, $normalized) !== false) {
                 $results[] = $product;
             }
         }
@@ -219,31 +233,31 @@ class Product
         return $results;
     }
 
-    public function reduceStock($product_id, $quantity) {
-    $stmt = $this->db->prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?");
-    return $stmt->execute([$quantity, $product_id]);
-}
-public function getAverageRating($productId)
-{
-    $stmt = $this->db->prepare("
+    public function reduceStock($product_id, $quantity)
+    {
+        $stmt = $this->db->prepare("UPDATE products SET stock_quantity = stock_quantity - ? WHERE id = ?");
+        return $stmt->execute([$quantity, $product_id]);
+    }
+    public function getAverageRating($productId)
+    {
+        $stmt = $this->db->prepare("
         SELECT AVG(rating) as avg_rating
         FROM reviews
         WHERE product_id = ?
     ");
-    $stmt->execute([$productId]);
-    $result = $stmt->fetch(PDO::FETCH_OBJ);
-    return round($result->avg_rating, 1); // ví dụ: 4.2
-}
+        $stmt->execute([$productId]);
+        $result = $stmt->fetch(PDO::FETCH_OBJ);
+        return round($result->avg_rating, 1); // ví dụ: 4.2
+    }
 
-public function getRatingStats($productId)
-{
-    $stmt = $this->db->prepare("
+    public function getRatingStats($productId)
+    {
+        $stmt = $this->db->prepare("
         SELECT COUNT(*) AS total_reviews, AVG(rating) AS avg_rating
         FROM reviews
         WHERE product_id = ?
     ");
-    $stmt->execute([$productId]);
-    return $stmt->fetch(PDO::FETCH_OBJ);
-}
-
+        $stmt->execute([$productId]);
+        return $stmt->fetch(PDO::FETCH_OBJ);
+    }
 }

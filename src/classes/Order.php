@@ -26,6 +26,8 @@ class Order
             o.status,
             o.cancel_request,
             o.cancel_approved,
+            o.payment_method,
+            o.created_at,
             oi.quantity,
             oi.price,
             p.name AS product_name
@@ -34,6 +36,66 @@ class Order
         JOIN products p ON oi.product_id = p.id
         ORDER BY o.id DESC
     ");
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
+
+    public function getFilteredOrders($filters = [])
+    {
+        $query = "
+        SELECT 
+            o.id,
+            o.customer_name,
+            o.customer_email,
+            o.customer_address,
+            o.customer_phone,
+            o.status,
+            o.cancel_request,
+            o.cancel_approved,
+            o.payment_method,
+            o.created_at,
+            oi.quantity,
+            oi.price,
+            p.name AS product_name
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN products p ON oi.product_id = p.id
+        WHERE 1
+    ";
+
+        $params = [];
+
+        // Trạng thái
+        if (!empty($filters['status'])) {
+            if ($filters['status'] === 'Đã hủy') {
+                $query .= " AND o.cancel_approved = 1";
+            } else {
+                $query .= " AND o.status = :status AND (o.cancel_approved IS NULL OR o.cancel_approved = 0)";
+                $params[':status'] = $filters['status'];
+            }
+        }
+
+        // Phương thức thanh toán
+        if (!empty($filters['payment_method'])) {
+            $query .= " AND o.payment_method = :payment_method";
+            $params[':payment_method'] = $filters['payment_method'];
+        }
+
+        // Ngày bắt đầu
+        if (!empty($filters['from'])) {
+            $query .= " AND DATE(o.created_at) >= :from";
+            $params[':from'] = $filters['from'];
+        }
+
+        // Ngày kết thúc
+        if (!empty($filters['to'])) {
+            $query .= " AND DATE(o.created_at) <= :to";
+            $params[':to'] = $filters['to'];
+        }
+
+        $query .= " ORDER BY o.created_at DESC";
+
+        $stmt = $this->pdo->prepare($query);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
 
@@ -230,46 +292,45 @@ class Order
     }
 
     public function create($userId, array $cartItems, float $totalPrice, string $paymentMethod = 'vnpay', string $status = 'đang xử lý')
-{
-    // Lấy thông tin người dùng từ bảng users
-    $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmt->execute([$userId]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    {
+        // Lấy thông tin người dùng từ bảng users
+        $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$user) {
-        throw new \Exception("Người dùng không tồn tại.");
-    }
+        if (!$user) {
+            throw new \Exception("Người dùng không tồn tại.");
+        }
 
-    // Tạo đơn hàng
-    $stmt = $this->pdo->prepare("
+        // Tạo đơn hàng
+        $stmt = $this->pdo->prepare("
         INSERT INTO orders (customer_name, username, customer_email, customer_address, customer_phone, total_price, status, payment_method)
         VALUES (:name, :username, :email, :address, :phone, :total, :status, :payment)
     ");
-    $stmt->execute([
-        ':name'     => $user['fullname'] ?? $user['username'],
-        ':username' => $user['username'],
-        ':email'    => $user['email'],
-        ':address'  => $user['address'] ?? '',
-        ':phone'    => $user['phone'] ?? '',
-        ':total'    => $totalPrice,
-        ':status'   => $status,
-        ':payment'  => $paymentMethod
-    ]);
+        $stmt->execute([
+            ':name'     => $user['fullname'] ?? $user['username'],
+            ':username' => $user['username'],
+            ':email'    => $user['email'],
+            ':address'  => $user['address'] ?? '',
+            ':phone'    => $user['phone'] ?? '',
+            ':total'    => $totalPrice,
+            ':status'   => $status,
+            ':payment'  => $paymentMethod
+        ]);
 
-    $orderId = $this->pdo->lastInsertId();
+        $orderId = $this->pdo->lastInsertId();
 
-    // Chèn từng item vào order_items
-    foreach ($cartItems as $item) {
-        $this->insertOrderItem(
-            $orderId,
-            $item->product_id,
-            $item->product_name,
-            $item->quantity,
-            $item->price
-        );
+        // Chèn từng item vào order_items
+        foreach ($cartItems as $item) {
+            $this->insertOrderItem(
+                $orderId,
+                $item->product_id,
+                $item->product_name,
+                $item->quantity,
+                $item->price
+            );
+        }
+
+        return $orderId;
     }
-
-    return $orderId;
-}
-
 }
