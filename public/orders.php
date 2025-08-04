@@ -93,7 +93,7 @@ foreach ($rawOrders as $row) {
                                 <div><strong>Mã giảm giá:</strong> <?= htmlspecialchars($order['discount_code']); ?></div>
                                 <div><strong>Giảm giá:</strong> -<?= number_format($order['discount_amount'], 0, ',', '.'); ?> VNĐ</div>
                             <?php endif; ?>
-                            <div><strong>Tổng cộng:</strong> <?= number_format($order['total_price'] - $order['discount_amount'], 0, ',', '.'); ?> VNĐ</div>
+                            <div><strong>Tổng cộng:</strong> <?= number_format($order['total_price'], 0, ',', '.'); ?> VNĐ</div>
                             <?php if ($order['status'] === 'Đang xử lý' && !$order['cancel_request']): ?>
                                 <form method="post" action="/cancel_request.php">
                                     <input type="hidden" name="order_id" value="<?= $orderId; ?>">
@@ -106,6 +106,7 @@ foreach ($rawOrders as $row) {
                             <?php elseif ($order['cancel_approved'] === 0): ?>
                                 <p class="text-danger mt-2">Yêu cầu hủy đã bị từ chối.</p>
                             <?php endif; ?>
+                            <a href="/invoice.php?id=<?= $orderId ?>" target="_blank" class="btn btn-secondary btn-sm mt-2">🖨️ In hóa đơn</a>
                         </div>
                     </div>
                 </div>
