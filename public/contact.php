@@ -24,7 +24,7 @@ include_once __DIR__ . '/../src/partials/header.php';
             </div>
             <div class="col-lg-6">
                 <h2>Thông tin liên lạc</h2>
-                <p><strong>Địa chỉ:</strong>Khu II, Đ. 3 Tháng 2, Xuân Khánh, Ninh Kiều, Cần Thơ, Việt Nam</p>
+                <p><strong>Địa chỉ:</strong>123, Đ. 3 Tháng 2, Xuân Khánh, Ninh Kiều, Cần Thơ, Việt Nam</p>
                 <p><strong>Email:</strong> khangb2105617@student.ctu.edu.vn</p>
                 <p><strong>Điện thoại:</strong>0900001122</p>
                 <h3>Vị trí của chúng tôi</h3>
