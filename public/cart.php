@@ -1,5 +1,12 @@
 <?php
 session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    $_SESSION['error'] = 'Vui lòng đăng nhập để truy cập giỏ hàng.';
+    header('Location: /login.php'); // hoặc đường dẫn đúng đến trang đăng nhập
+    exit;
+}
+
 include_once __DIR__ . '/../src/partials/header.php';
 require_once __DIR__ . '/../src/bootstrap.php';
 
