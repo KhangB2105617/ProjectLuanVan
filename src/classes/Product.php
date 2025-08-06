@@ -260,4 +260,10 @@ class Product
         $stmt->execute([$productId]);
         return $stmt->fetch(PDO::FETCH_OBJ);
     }
+    public function getTotalProducts(): int
+{
+    $stmt = $this->db->query("SELECT COUNT(*) FROM products WHERE deleted_at IS NULL");
+    return (int) $stmt->fetchColumn();
+}
+
 }

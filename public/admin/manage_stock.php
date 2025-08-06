@@ -68,8 +68,6 @@ $history = $stock->getStockHistory();
             <main class="col-md-10 ms-sm-auto px-md-4" style="margin-left: 17%;">
                 <h1 class="mb-4">Quản lý kho hàng</h1>
 
-                <!-- Cập nhật tồn kho -->
-                <h2>Cập nhật tồn kho</h2>
                 <form action="manage_stock.php" method="POST">
                     <div class="mb-3">
                         <label for="product_id" class="form-label">Chọn sản phẩm</label>
@@ -80,11 +78,11 @@ $history = $stock->getStockHistory();
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="quantity" class="form-label">Số lượng thay đổi</label>
+                        <label for="quantity" class="form-label">Số lượng</label>
                         <input type="number" class="form-control" name="quantity" required min="1">
                     </div>
                     <div class="mb-3">
-                        <label for="change_type" class="form-label">Loại thay đổi</label>
+                        <label for="change_type" class="form-label">Hình thức</label>
                         <select class="form-select" name="change_type" required>
                             <option value="in">Nhập kho</option>
                             <option value="out">Xuất kho</option>

@@ -4,12 +4,6 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 use NL\Product;
 
-// Kiểm tra quyền admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location: /unauthorized.php");
-    exit;
-}
-
 // Truy vấn danh sách bình luận
 $stmt = $PDO->prepare("
     SELECT r.*, p.name AS product_name 

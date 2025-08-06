@@ -280,4 +280,10 @@ class User
             ':id' => $id
         ]);
     }
+    public function getTotalUsers(): int
+{
+    $stmt = $this->db->query("SELECT COUNT(*) FROM users");
+    return (int) $stmt->fetchColumn();
+}
+
 }
