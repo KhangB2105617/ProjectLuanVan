@@ -27,5 +27,6 @@
         </div>
     </div>
 </footer>
+<?php include_once __DIR__ . '/../../public/chat_widget.php'; ?>
 </body>
 </html>
