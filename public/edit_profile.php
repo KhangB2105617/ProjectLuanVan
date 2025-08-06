@@ -121,15 +121,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-3">
                 <label for="old_password" class="form-label">Mật khẩu hiện tại</label>
-                <input type="password" class="form-control <?= $highlightPassword ? 'is-invalid' : '' ?>" id="old_password" name="old_password">
+                <input type="password" class="form-control <?= $highlightPassword ? 'is-invalid' : '' ?>" id="old_password" name="old_password" placeholder="Nếu không đổi mật khẩu hãy để trống">
             </div>
             <div class="mb-3">
                 <label for="new_password" class="form-label">Mật khẩu mới</label>
-                <input type="password" class="form-control" id="new_password" name="new_password">
+                <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Nếu không đổi mật khẩu hãy để trống">
             </div>
             <div class="mb-3">
                 <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
-                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Nếu không đổi mật khẩu hãy để trống">
             </div>
 
             <div class="mb-3">
