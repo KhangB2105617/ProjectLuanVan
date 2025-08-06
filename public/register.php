@@ -142,7 +142,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 
 <body>
-    <div class="login-container text-center">
+    <div class="register-container text-center">
         <h2>Đăng Ký Người Dùng</h2>
 
         <?php
