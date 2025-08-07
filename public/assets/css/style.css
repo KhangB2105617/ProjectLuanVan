@@ -261,7 +261,45 @@ header {
     margin-top: 20px;
     text-align: center;
 }
-
+.flash-sale-section {
+    background: linear-gradient(to right, #f86b96, #fd8ab4);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 40px;
+    position: relative;
+}
+.flash-sale-scroll {
+    overflow-x: auto;
+    white-space: nowrap;
+    scroll-behavior: smooth;
+    padding: 10px 0;
+}
+.flash-sale-item {
+    display: inline-block;
+    width: 235px;
+    vertical-align: top;
+}
+.flash-sale-item .card {
+    height: 100%;
+}
+.flash-sale-scroll::-webkit-scrollbar {
+    display: none;
+}
+.nav-left,
+.nav-right {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.8);
+    border: none;
+    border-radius: 50%;
+    padding: 8px 12px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+}
+.nav-left { left: 10px; }
+.nav-right { right: 10px; }
 /* === Responsive Design === */
 @media (max-width: 768px) {
     .checkout-page .container {

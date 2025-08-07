@@ -34,7 +34,7 @@ $products = $brandFilter ? $product->getProductsByBrand($brandFilter, $sortOrder
         <div class="row mb-3">
             <div class="col-12">
                 <section class="d-flex align-items-center">
-                    <h5 class="fw-bold me-3">Sắp xếp theo</h5>
+                    <h5 class="fw-bold me-3">Lọc theo</h5>
                     <a href="?sort=desc<?= $brandFilter ? '&brand=' . urlencode($brandFilter) : '' ?>" class="btn btn-light <?= $sortOrder == 'desc' ? 'active' : '' ?>">
                         <i class="fas fa-sort-amount-down"></i> Giá Cao - Thấp
                     </a>

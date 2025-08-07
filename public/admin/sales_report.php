@@ -4,35 +4,36 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/../../src/bootstrap.php';
 
-use NL\User;
-use NL\Product;
 use NL\Order;
 
-$month = date('m');
-$year = date('Y');
-$user = new User($PDO);
-$product = new Product($PDO);
+$order = new Order($PDO);
+$year = $_GET['year'] ?? date('Y');
+$reportData = $order->getMonthlySalesReportByYear($year);
+
+// Dữ liệu để truyền vào Chart.js
+$labels = [];
+$salesData = [];
+$orderData = [];
+$productData = [];
+
+foreach ($reportData as $item) {
+    $labels[] = 'Tháng ' . $item->month;
+    $salesData[] = $item->total_sales;
+    $orderData[] = $item->total_orders;
+    $productData[] = $item->total_products;
+}
+$selectedMonth = isset($_GET['month']) ? (int)$_GET['month'] : null;
+$selectedYear  = isset($_GET['year']) ? (int)$_GET['year'] : date('Y');
+
 $order = new Order($PDO);
 
-$from = $_GET['from'] ?? null;
-$to   = $_GET['to'] ?? null;
-
-$from = ($from !== '') ? $from : null;
-$to   = ($to !== '') ? $to : null;
-
-$type = $_GET['type'] ?? 'month';
-
-if ($from && $to && $from > $to) {
-    echo '<div class="alert alert-danger">Lỗi: Vui lòng chọn lại ngày tháng năm cần lọc phù hợp.</div>';
+if ($selectedMonth) {
+    // Nếu người dùng chọn tháng => Lấy báo cáo theo tháng và năm
+    $reportData = $order->getSalesReportByMonthYear($selectedMonth, $selectedYear);
+} else {
+    // Mặc định hoặc chỉ chọn năm => Lấy báo cáo cả 12 tháng của năm
+    $reportData = $order->getMonthlySalesReportByYear($selectedYear);
 }
-
-$totalUsers = $user->getTotalUsers();
-$totalProducts = $product->getTotalProducts();
-$totalOrders = $order->getTotalOrdersInMonth($month, $year);
-$totalSoldProducts = $order->getTotalProductsSoldInMonth($month, $year);
-$salesData = $order->getTotalSalesReport($type, $from, $to);
-$topProducts = $order->getTopSellingProducts(5);
-$leastProducts = $order->getLeastSellingProducts(5);
 ?>
 
 <!DOCTYPE html>
@@ -62,189 +63,166 @@ $leastProducts = $order->getLeastSellingProducts(5);
                 <div class="pt-3">
                     <h1>Thống Kê</h1>
                     <form method="GET" class="row g-2 mb-3">
+
                         <div class="col-auto">
-                            <input type="date" name="from" class="form-control" value="<?= $_GET['from'] ?? '' ?>" placeholder="Từ ngày">
+                            <select name="month" class="form-select">
+                                <option value="">-- Chọn tháng --</option>
+                                <?php for ($m = 1; $m <= 12; $m++): ?>
+                                    <option value="<?= $m ?>" <?= (isset($_GET['month']) && $_GET['month'] == $m) ? 'selected' : '' ?>>
+                                        Tháng <?= $m ?>
+                                    </option>
+                                <?php endfor; ?>
+                            </select>
                         </div>
+
                         <div class="col-auto">
-                            <input type="date" name="to" class="form-control" value="<?= $_GET['to'] ?? '' ?>" placeholder="Đến ngày">
-                        </div>
-                        <div class="col-auto">
-                            <select name="type" class="form-select">
-                                <option value="day" <?= $type === 'day' ? 'selected' : '' ?>>Theo ngày</option>
-                                <option value="month" <?= $type === 'month' ? 'selected' : '' ?>>Theo tháng</option>
-                                <option value="quarter" <?= $type === 'quarter' ? 'selected' : '' ?>>Theo quý</option>
-                                <option value="year" <?= $type === 'year' ? 'selected' : '' ?>>Theo năm</option>
+                            <select name="year" class="form-select">
+                                <option value="">-- Chọn năm --</option>
+                                <?php
+                                $currentYear = date('Y');
+                                for ($y = $currentYear; $y >= $currentYear - 5; $y--): ?>
+                                    <option value="<?= $y ?>" <?= (isset($_GET['year']) && $_GET['year'] == $y) ? 'selected' : '' ?>>
+                                        Năm <?= $y ?>
+                                    </option>
+                                <?php endfor; ?>
                             </select>
                         </div>
                         <div class="col-auto">
                             <button type="submit" class="btn btn-primary">Thống Kê</button>
                         </div>
                     </form>
+<?php if (isset($_GET['month']) && isset($_GET['year']) && $_GET['month'] !== '' && $_GET['year'] !== ''): ?>
+    <table class="table table-bordered mt-3">
+        <thead>
+            <tr>
+                <th>Thời gian</th>
+                <th>Tổng doanh thu (VND)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($reportData as $item): ?>
+                <tr>
+                    <td>
+                        <?php if (isset($item->month)): ?>
+                            Tháng <?= $item->month ?>
+                        <?php else: ?>
+                            <?= $selectedMonth ?>/<?= $selectedYear ?>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= number_format($item->total_sales ?? 0, 0, ',', '.') ?> đ</td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
 
-                    <table class="table table-bordered mt-3">
-                        <thead>
-                            <tr>
-                                <th>Thời gian</th>
-                                <th>Tổng doanh thu (VND)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($salesData as $data): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($data->time_period) ?></td>
-                                    <td><?= number_format($data->total_sales, 0, ',', '.') ?> đ</td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <canvas id="overviewChart" height="130"></canvas>
-                    <h2 class="mt-5">Biểu đồ doanh thu theo tháng</h2>
-                    <canvas id="salesChart" height="100"></canvas>
+    <!-- Biểu đồ doanh thu -->
+    <h5 class="mt-5">Biểu đồ Doanh thu</h5>
+    <canvas id="salesChart" height="100"></canvas>
 
-                    <h2 class="mt-5">Top sản phẩm bán chạy nhất</h2>
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-success">
-                            <tr>
-                                <th>STT</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Tổng số lượng bán</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($topProducts as $index => $product): ?>
-                                <tr>
-                                    <td><?= $index + 1 ?></td>
-                                    <td><?= htmlspecialchars($product->product_name) ?></td>
-                                    <td><?= $product->total_quantity ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+    <!-- Biểu đồ đơn hàng -->
+    <h5 class="mt-5">Biểu đồ Số đơn hàng</h5>
+    <canvas id="ordersChart" height="100"></canvas>
 
-                    <h2 class="mt-3">Biểu đồ Top sản phẩm bán chạy</h2>
-                    <canvas id="topProductsChart" height="100"></canvas>
-
-                    <h2 class="mt-5">Top sản phẩm bán ít nhất</h2>
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-danger">
-                            <tr>
-                                <th>#</th>
-                                <th>Tên sản phẩm</th>
-                                <th>Tổng số lượng bán</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($leastProducts as $index => $product): ?>
-                                <tr>
-                                    <td><?= $index + 1 ?></td>
-                                    <td><?= htmlspecialchars($product->product_name) ?></td>
-                                    <td><?= $product->total_quantity ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+    <!-- Biểu đồ sản phẩm bán ra -->
+    <h5 class="mt-5">Biểu đồ Sản phẩm bán ra</h5>
+    <canvas id="productsChart" height="100"></canvas>
+<?php endif; ?>
             </main>
-        </div>
-    </div>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+            <script>
+                const labels = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+                const salesData = <?= json_encode($salesData) ?>;
+                const ordersData = <?= json_encode($orderData) ?>;
+                const productsData = <?= json_encode($productData) ?>;
 
-    <script>
-        const salesLabels = <?= json_encode(array_map(fn($d) => $d->time_period, $salesData)) ?>;
-        const salesData = <?= json_encode(array_map(fn($d) => $d->total_sales, $salesData)) ?>;
-
-        const topLabels = <?= json_encode(array_map(fn($p) => $p->product_name, $topProducts)) ?>;
-        const topData = <?= json_encode(array_map(fn($p) => $p->total_quantity, $topProducts)) ?>;
-
-        new Chart(document.getElementById('salesChart'), {
-            type: 'bar',
-            data: {
-                labels: salesLabels,
-                datasets: [{
-                    label: 'Tổng doanh thu',
-                    data: salesData,
-                    borderColor: 'blue',
-                    backgroundColor: 'lightblue',
-                    barThickness: 20,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    }
-                }
-            }
-        });
-
-        new Chart(document.getElementById('topProductsChart'), {
-            type: 'bar',
-            data: {
-                labels: topLabels,
-                datasets: [{
-                    label: 'Số lượng bán',
-                    data: topData,
-                    backgroundColor: 'green',
-                    barThickness: 20
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-    </script>
-    <script>
-        const ctx = document.getElementById('overviewChart').getContext('2d');
-
-        const overviewChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: [
-                    'Tổng tài khoản trên hệ thống',
-                    'Tổng sản phẩm đang bán',
-                    'Tổng đơn hàng (tháng <?= $month ?>/<?= $year ?>)',
-                    'Sản phẩm đã bán (tháng <?= $month ?>/<?= $year ?>)'
-                ],
-                datasets: [{
-                    label: 'Chỉ số thống kê',
-                    data: [
-                        <?= $totalUsers ?>,
-                        <?= $totalProducts ?>,
-                        <?= $totalOrders ?>,
-                        <?= $totalSoldProducts ?>
-                    ],
-
-                    backgroundColor: [
-                        '#0d6efd',
-                        '#198754',
-                        '#ffc107',
-                        '#dc3545'
-                    ],
-                    barThickness: 20,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                // Biểu đồ doanh thu
+                new Chart(document.getElementById('salesChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Doanh thu (VND)',
+                            data: salesData,
+                            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Biểu đồ Doanh thu'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
                         }
                     }
-                }
-            }
-        });
-    </script>
+                });
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+                // Biểu đồ đơn hàng
+                new Chart(document.getElementById('ordersChart'), {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Số đơn hàng',
+                            data: ordersData,
+                            backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Biểu đồ Đơn hàng'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                precision: 0
+                            }
+                        }
+                    }
+                });
+
+                // Biểu đồ sản phẩm bán ra
+                new Chart(document.getElementById('productsChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Sản phẩm bán ra',
+                            data: productsData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Biểu đồ Sản phẩm bán ra'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                precision: 0
+                            }
+                        }
+                    }
+                });
+            </script>
+
 </body>
 
 </html>

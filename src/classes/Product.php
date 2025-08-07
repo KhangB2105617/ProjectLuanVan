@@ -45,7 +45,7 @@ class Product
     public function getById($id)
     {
         $stmt = $this->db->prepare("
-            SELECT p.*, b.name AS brand_name, b.brand_image, c.name AS category_name
+            SELECT p.*, b.name AS brand_name, b.brand_image, b.brand_origin, c.name AS category_name
             FROM products p
             LEFT JOIN brands b ON p.brand_id = b.id
             LEFT JOIN categories c ON p.category_id = c.id
@@ -265,5 +265,4 @@ class Product
     $stmt = $this->db->query("SELECT COUNT(*) FROM products WHERE deleted_at IS NULL");
     return (int) $stmt->fetchColumn();
 }
-
 }

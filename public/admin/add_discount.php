@@ -3,8 +3,8 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $PDO->prepare("INSERT INTO discount_codes 
-        (code, discount_type, discount_value, max_usage, start_at, expired_at) 
-        VALUES (:code, :type, :value, :max, :start, :expired)");
+        (code, discount_type, discount_value, max_usage, start_at, expired_at, min_order_amount) 
+        VALUES (:code, :type, :value, :max, :start, :expired, :min)");
 
     $stmt->execute([
         ':code'    => $_POST['code'],
@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ':max'     => $_POST['max_usage'],
         ':start'   => $_POST['start_at'],
         ':expired' => $_POST['expired_at'],
+        ':min'     => !empty($_POST['min_order_amount']) ? $_POST['min_order_amount'] : null,
     ]);
 
     header("Location: manage_discounts.php");
@@ -22,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Thêm mã khuyến mãi</title>
@@ -29,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
+
 <body>
     <div class="container mt-4">
         <h2>Thêm mã khuyến mãi</h2>
@@ -51,6 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-3">
                 <label>Số lần sử dụng tối đa</label>
                 <input type="number" name="max_usage" class="form-control" value="1">
+            </div>
+            <div class="mb-3">
+                <label>Giá trị đơn hàng tối thiểu (VNĐ)</label>
+                <input type="number" name="min_order_amount" class="form-control" placeholder="Nhập số tiền tối thiểu" min="0">
             </div>
             <div class="mb-3">
                 <label>Ngày bắt đầu</label>
@@ -81,4 +88,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     </script>
 </body>
+
 </html>

@@ -4,6 +4,11 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/../../src/bootstrap.php';
 
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'staff'])) {
+    header('Location: /unauthorized.php');
+    exit;
+}
+
 use NL\Order;
 
 $order = new Order($PDO);

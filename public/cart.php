@@ -43,7 +43,7 @@ $totalPrice = 0;
 
 <main>
     <div class="container mt-5">
-        <h1 class="text-center">Giỏ Hàng</h1>
+        <h1 class="text-center">GIỎ HÀNG</h1>
         <div class="table-responsive">
             <table class="table table-bordered align-middle text-center">
                 <thead>

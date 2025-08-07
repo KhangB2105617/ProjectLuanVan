@@ -23,31 +23,31 @@ class Stock
     }
 
     // Cập nhật số lượng sản phẩm khi thay đổi kho
-   public function updateStockQuantity($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null, $user_id = null, $log = true)
-{
-    $currentProduct = $this->getProductById($product_id);
+    public function updateStockQuantity($product_id, $quantity_change, $change_type, $import_price = null, $export_price = null, $user_id = null, $log = true)
+    {
+        $currentProduct = $this->getProductById($product_id);
 
-    if (!$currentProduct) return false;
+        if (!$currentProduct) return false;
 
-    $new_quantity = ($change_type === 'in')
-        ? $currentProduct->quantity + $quantity_change
-        : $currentProduct->quantity - $quantity_change;
+        $new_quantity = ($change_type === 'in')
+            ? $currentProduct->quantity + $quantity_change
+            : $currentProduct->quantity - $quantity_change;
 
-    if ($new_quantity < 0) return false;
+        if ($new_quantity < 0) return false;
 
-    $stmt = $this->db->prepare("UPDATE products SET quantity = :quantity WHERE id = :id");
-    $stmt->bindParam(':quantity', $new_quantity, PDO::PARAM_INT);
-    $stmt->bindParam(':id', $product_id, PDO::PARAM_INT);
-    $stmt->execute();
+        $stmt = $this->db->prepare("UPDATE products SET quantity = :quantity WHERE id = :id");
+        $stmt->bindParam(':quantity', $new_quantity, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $product_id, PDO::PARAM_INT);
+        $stmt->execute();
 
-    // Ghi log nếu cần
-    if ($log) {
-        $user_id = $_SESSION['user_id'] ?? $user_id;
-        $this->logStockChange($product_id, $quantity_change, $change_type, $import_price, $export_price, $user_id);
+        // Ghi log nếu cần
+        if ($log) {
+            $user_id = $_SESSION['user_id'] ?? $user_id;
+            $this->logStockChange($product_id, $quantity_change, $change_type, $import_price, $export_price, $user_id);
+        }
+
+        return true;
     }
-
-    return true;
-}
 
     // Lấy thông tin sản phẩm theo id
     private function getProductById($product_id)
@@ -88,5 +88,23 @@ class Stock
             ORDER BY sh.change_date DESC
         ");
         return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
+    public function getAllStockHistoryGroupedByProduct()
+    {
+        $stmt = $this->db->prepare("
+        SELECT sh.*, p.name as product_name, u.username as user_name
+        FROM stock_history sh
+        JOIN products p ON sh.product_id = p.id
+        LEFT JOIN users u ON sh.user_id = u.id
+        ORDER BY sh.change_date DESC
+    ");
+        $stmt->execute();
+        $rows = $stmt->fetchAll(PDO::FETCH_OBJ);
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $grouped[$row->product_id][] = $row;
+        }
+        return $grouped;
     }
 }

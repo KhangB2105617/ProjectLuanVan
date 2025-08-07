@@ -1,5 +1,11 @@
 <?php
-session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'staff'])) {
+    header('Location: /unauthorized.php');
+    exit;
+}
 require_once __DIR__ . '/../../src/bootstrap.php';
 
 use NL\Product;
@@ -9,7 +15,7 @@ $stmt = $PDO->prepare("
     SELECT r.*, p.name AS product_name 
     FROM reviews r 
     JOIN products p ON r.product_id = p.id 
-    ORDER BY r.created_at ASC
+    ORDER BY r.created_at DESC
 ");
 $stmt->execute();
 $reviews = $stmt->fetchAll(PDO::FETCH_OBJ);

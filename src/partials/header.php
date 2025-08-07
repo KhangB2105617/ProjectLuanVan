@@ -42,7 +42,7 @@ require_once __DIR__ . '/../bootstrap.php';
                         <ul class="navbar-nav">
                             <li class="nav-item"><a class="nav-link fw-bold" href="index.php">Trang chủ</a></li>
                             <li class="nav-item"><a class="nav-link fw-bold" href="product.php">Đồng hồ</a></li>
-                            <li class="nav-item"><a class="nav-link fw-bold" href="contact.php">Liên hệ</a></li>
+                            <li class="nav-item"><a class="nav-link fw-bold" href="product_news.php">Tin tức sản phẩm</a></li>
                             <li class="nav-item"><a class="nav-link fw-bold" href="about.php">Về chúng tôi</a></li>
                         </ul>
                     </div>

@@ -79,16 +79,16 @@ $userId = $_SESSION['id'];
     }
 
     #chat-input textarea {
-    flex: 1;
-    resize: none;
-    padding: 10px 12px;
-    border-radius: 20px;
-    border: none;
-    outline: none;
-    font-size: 14px;
-    background: white;
-    font-family: 'Segoe UI', sans-serif;
-}
+        flex: 1;
+        resize: none;
+        padding: 10px 12px;
+        border-radius: 20px;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        background: white;
+        font-family: 'Segoe UI', sans-serif;
+    }
 
     #chat-input button {
         background: #0084ff;
@@ -104,11 +104,72 @@ $userId = $_SESSION['id'];
     #chat-input button:hover {
         background: #006fd6;
     }
+
+    #quick-questions {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 10px;
+    }
+
+    .question-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .question-buttons button {
+        background-color: #eee;
+        border: none;
+        border-radius: 20px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .question-buttons button:hover {
+        background-color: #ddd;
+    }
+
+    #chat-box.minimized {
+        width: auto;
+        height: auto;
+        border-radius: 20px;
+        padding: 0;
+        background-color: #0084ff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #chat-box.minimized #chat-header {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 8px 14px;
+        font-size: 14px;
+        white-space: nowrap;
+        border-radius: 20px;
+        background-color: #0084ff;
+    }
+
+    #chat-box.minimized #chat-body {
+        display: none !important;
+    }
 </style>
 
-<div id="chat-box">
+<div id="chat-box" class="minimized">
     <div id="chat-header">💬 Chat với Shop</div>
     <div id="chat-body">
+        <div id="quick-questions" style="margin-bottom: 1px;">
+            <div class="question-buttons">
+                <button onclick="sendQuickQuestion(this)">Đồng hồ này có chống nước không?</button>
+                <button onclick="sendQuickQuestion(this)">Có bảo hành bao lâu vậy?</button>
+                <button onclick="sendQuickQuestion(this)">Thời gian giao hàng dự kiến?</button>
+                <button onclick="sendQuickQuestion(this)">Shop có cửa hàng ở đâu?</button>
+                <button onclick="sendQuickQuestion(this)">Có mẫu dưới 2 triệu không?</button>
+            </div>
+        </div>
+
         <div id="chat-messages"></div>
         <div id="chat-input">
             <textarea id="message" rows="1" placeholder="Nhập tin nhắn..."></textarea>
@@ -118,10 +179,30 @@ $userId = $_SESSION['id'];
 </div>
 
 <script>
+    const chatBox = document.getElementById("chat-box");
+    const chatBody = document.getElementById("chat-body");
+
     document.getElementById("chat-header").onclick = function() {
-        const body = document.getElementById("chat-body");
-        body.style.display = body.style.display === "none" ? "flex" : "none";
+        const isMinimized = chatBox.classList.contains("minimized");
+
+        if (isMinimized) {
+            chatBox.classList.remove("minimized");
+            chatBody.style.display = "flex";
+        } else {
+            chatBox.classList.add("minimized");
+            chatBody.style.display = "none";
+        }
     };
+
+    // Thu nhỏ khi click ra ngoài
+    document.addEventListener("click", function(event) {
+        const isClickInside = chatBox.contains(event.target);
+
+        if (!isClickInside) {
+            chatBox.classList.add("minimized");
+            chatBody.style.display = "none";
+        }
+    });
 
     function loadMessages() {
         fetch('chat_get.php')
@@ -132,14 +213,22 @@ $userId = $_SESSION['id'];
                 data.forEach(msg => {
                     const div = document.createElement("div");
                     div.classList.add('message');
-                    if (msg.sender === 'user') {
+
+                    if (msg.sender_role === 'customer') {
                         div.classList.add('user-message');
+                        div.textContent = msg.message; // ẩn tên user
                     } else {
                         div.classList.add('shop-message');
+                        div.innerHTML = `<strong>Nhân Viên:</strong> ${msg.message}`;
                     }
-                    div.textContent = msg.message;
+
                     box.appendChild(div);
                 });
+                if (data.length > 0) {
+                    document.getElementById("quick-questions").style.display = "none";
+                    firstMessageSent = true;
+                }
+
                 box.scrollTop = box.scrollHeight;
             });
     }
@@ -170,4 +259,20 @@ $userId = $_SESSION['id'];
     });
 
     setInterval(loadMessages, 2000);
+
+    let firstMessageSent = false;
+
+    function sendQuickQuestion(button) {
+        if (firstMessageSent) return;
+
+        const text = button.innerText;
+        const input = document.getElementById("message");
+
+        input.value = text;
+
+        sendMessage();
+
+        document.getElementById("quick-questions").style.display = "none";
+        firstMessageSent = true;
+    }
 </script>

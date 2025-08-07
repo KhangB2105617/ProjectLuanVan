@@ -170,71 +170,64 @@ class Order
     $params = [];
 
     if ($from && $to) {
-        $condition = "AND created_at BETWEEN :from AND :to";
+        $condition = "AND o.created_at BETWEEN :from AND :to";
         $params[':from'] = $from;
         $params[':to'] = $to;
     }
 
     switch ($type) {
-        case 'month':
-            $sql = "
-                SELECT MONTH(created_at) AS time_period, SUM(total_price) AS total_sales
-                FROM orders
-                WHERE status = 'Đã giao' $condition
-                GROUP BY MONTH(created_at)
-                ORDER BY MONTH(created_at)
-            ";
-            break;
         case 'day':
-            $sql = "
-                SELECT DATE(created_at) AS time_period, SUM(total_price) AS total_sales
-                FROM orders
-                WHERE status = 'Đã giao' $condition
-                GROUP BY DATE(created_at)
-                ORDER BY DATE(created_at)
-            ";
+            $groupBy = "DATE(o.created_at)";
+            break;
+        case 'month':
+            $groupBy = "CAST(MONTH(o.created_at) AS UNSIGNED) AS time_period
+";
             break;
         case 'year':
-            $sql = "
-                SELECT YEAR(created_at) AS time_period, SUM(total_price) AS total_sales
-                FROM orders
-                WHERE status = 'Đã giao' $condition
-                GROUP BY YEAR(created_at)
-                ORDER BY YEAR(created_at)
-            ";
+            $groupBy = "YEAR(o.created_at)";
             break;
         case 'quarter':
-            $sql = "
-                SELECT QUARTER(created_at) AS time_period, SUM(total_price) AS total_sales
-                FROM orders
-                WHERE status = 'Đã giao' $condition
-                GROUP BY QUARTER(created_at)
-                ORDER BY QUARTER(created_at)
-            ";
+            $groupBy = "CONCAT(YEAR(o.created_at), '-Q', QUARTER(o.created_at))";
             break;
         default:
             return [];
     }
+
+    $sql = "
+        SELECT 
+            $groupBy AS time_period,
+            SUM(o.total_price) AS total_sales,
+            COUNT(DISTINCT o.id) AS total_orders,
+            SUM(oi.quantity) AS total_products
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.status = 'Đã giao' $condition
+        GROUP BY time_period
+        ORDER BY time_period
+    ";
 
     $stmt = $this->pdo->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
     public function getTopSellingProducts($limit = 5)
-    {
-        $stmt = $this->pdo->prepare("
-        SELECT oi.product_name, SUM(oi.quantity) AS total_quantity
+{
+    $stmt = $this->pdo->prepare("
+        SELECT 
+            p.id, p.name, p.image, p.price, p.original_price, 
+            SUM(oi.quantity) AS total_quantity
         FROM order_items oi
         JOIN orders o ON oi.order_id = o.id
+        JOIN products p ON oi.product_id = p.id
         WHERE o.status = 'Đã giao'
-        GROUP BY oi.product_name
+        GROUP BY p.id
         ORDER BY total_quantity DESC
         LIMIT :limit
     ");
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_OBJ);
-    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
     public function getLeastSellingProducts($limit = 5)
     {
         $stmt = $this->pdo->prepare("
@@ -320,135 +313,65 @@ class Order
 
         return $orderId;
     }
-    public function getTotalOrdersInMonth(int $month, int $year): int
+    public function getMonthlySalesReportByYear($year)
 {
-    $stmt = $this->pdo->prepare("
-        SELECT COUNT(*) 
-        FROM orders 
-        WHERE MONTH(created_at) = :month AND YEAR(created_at) = :year
-    ");
-    $stmt->execute([
-        ':month' => $month,
-        ':year' => $year
-    ]);
-    return (int) $stmt->fetchColumn();
-}
+    // Tạo mảng kết quả với 12 tháng mặc định = object
+    $results = [];
+    for ($i = 1; $i <= 12; $i++) {
+        $results[$i] = (object)[
+            'month' => $i, // Thay 'time_period' bằng 'month' để khớp với SQL
+            'total_sales' => 0.0,
+            'total_orders' => 0,
+            'total_products' => 0
+        ];
+    }
 
-public function getTotalProductsSoldInMonth(int $month, int $year): int
-{
+    // Lấy dữ liệu thực tế từ DB
     $stmt = $this->pdo->prepare("
-        SELECT SUM(oi.quantity) 
-        FROM order_items oi
-        INNER JOIN orders o ON oi.order_id = o.id
-        WHERE MONTH(o.created_at) = :month AND YEAR(o.created_at) = :year
-    ");
-    $stmt->execute([
-        ':month' => $month,
-        ':year' => $year
-    ]);
-    return (int) $stmt->fetchColumn() ?? 0;
-}
-// Doanh thu mỗi ngày trong tháng
-public function getRevenueByDay($month, $year): array {
-    $stmt = $this->pdo->prepare("
-        SELECT DATE(created_at) AS day, SUM(total_price - discount_amount) AS revenue
-        FROM orders
-        WHERE status = 'Đã giao' AND MONTH(created_at) = ? AND YEAR(created_at) = ?
-        GROUP BY day
-        ORDER BY day
-    ");
-    $stmt->execute([$month, $year]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// Số lượng nhập mỗi ngày trong tháng
-public function getImportQuantityByDay($month, $year)
-{
-    $sql = "
-        SELECT DATE(change_date) as date, SUM(change_quantity) as total
-        FROM stock_history
-        WHERE change_type = 'in' 
-          AND MONTH(change_date) = :month 
-          AND YEAR(change_date) = :year
-        GROUP BY DATE(change_date)
-        ORDER BY DATE(change_date)
-    ";
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute(['month' => $month, 'year' => $year]);
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-}
-
-// Số lượng xuất mỗi ngày trong tháng
-public function getExportQuantityByDay($month, $year)
-{
-    $sql = "
-        SELECT DATE(change_date) as date, SUM(change_quantity) as total
-        FROM stock_history
-        WHERE change_type = 'out' 
-          AND MONTH(change_date) = :month 
-          AND YEAR(change_date) = :year
-        GROUP BY DATE(change_date)
-        ORDER BY DATE(change_date)
-    ";
-    $stmt = $this->pdo->prepare($sql);
-    $stmt->execute(['month' => $month, 'year' => $year]);
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-}
-
-// Lấy đơn hàng trong ngày cụ thể
-public function getOrdersByDay($date): array {
-    $stmt = $this->pdo->prepare("
-        SELECT o.*, u.fullname, u.phone
+        SELECT 
+            MONTH(o.created_at) AS month,
+            SUM(o.total_price) AS total_sales,
+            COUNT(DISTINCT o.id) AS total_orders,
+            SUM(oi.quantity) AS total_products
         FROM orders o
-        JOIN users u ON o.user_id = u.id
-        WHERE DATE(o.created_at) = ?
-        ORDER BY o.created_at DESC
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.status = 'Đã giao'
+        AND YEAR(o.created_at) = :year
+        GROUP BY month
+        ORDER BY month
     ");
-    $stmt->execute([$date]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+    $stmt->execute([':year' => $year]);
+    $data = $stmt->fetchAll(PDO::FETCH_OBJ);
 
-// Tổng doanh thu trong tháng
-public function getTotalRevenueInMonth($month, $year): float {
+    // Gán dữ liệu thực tế vào mảng
+    foreach ($data as $item) {
+        $month = (int)$item->month;
+        $results[$month] = $item;
+    }
+
+    // Trả về mảng theo thứ tự từ 1–12
+    return array_values($results);
+}
+public function getSalesReportByMonthYear($month, $year)
+{
     $stmt = $this->pdo->prepare("
-        SELECT SUM(total_price - discount_amount) AS total
-        FROM orders
-        WHERE status = 'delivered' AND MONTH(created_at) = ? AND YEAR(created_at) = ?
+        SELECT 
+            :month AS month,
+            COALESCE(SUM(o.total_price), 0) AS total_sales,
+            COUNT(DISTINCT o.id) AS total_orders,
+            COALESCE(SUM(oi.quantity), 0) AS total_products
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        WHERE o.status = 'Đã giao'
+        AND MONTH(o.created_at) = :month
+        AND YEAR(o.created_at) = :year
     ");
-    $stmt->execute([$month, $year]);
-    return (float) $stmt->fetchColumn();
-}
+    $stmt->execute([
+        ':month' => $month,
+        ':year' => $year
+    ]);
 
-// Top sản phẩm bán chạy trong tháng
-public function getTopSellingProductsByMonth($month, $year, $limit = 5): array {
-    $stmt = $this->pdo->prepare("
-        SELECT p.name, SUM(oi.quantity) AS total_sold
-        FROM order_items oi
-        JOIN orders o ON oi.order_id = o.id
-        JOIN products p ON oi.product_id = p.id
-        WHERE o.status = 'Đã giao' AND MONTH(o.created_at) = ? AND YEAR(o.created_at) = ?
-        GROUP BY p.id
-        ORDER BY total_sold DESC
-        LIMIT ?
-    ");
-    $stmt->execute([$month, $year, $limit]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return $stmt->fetchAll(PDO::FETCH_OBJ);
 }
-
-// Top sản phẩm xuất kho nhiều nhất trong tháng
-public function getTopExportedProductsByMonth($month, $year, $limit = 5): array {
-    $stmt = $this->pdo->prepare("
-        SELECT p.name, SUM(sh.quantity) AS total_exported
-        FROM stock_history sh
-        JOIN products p ON sh.product_id = p.id
-        WHERE sh.type = 'export' AND MONTH(sh.created_at) = ? AND YEAR(sh.created_at) = ?
-        GROUP BY sh.product_id
-        ORDER BY total_exported DESC
-        LIMIT ?
-    ");
-    $stmt->execute([$month, $year, $limit]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 
 }
