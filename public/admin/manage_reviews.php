@@ -26,7 +26,7 @@ include 'includes/header.php';
         <?php include 'includes/sidebar.php'; ?>
         <main class="col-md-10 ms-sm-auto px-md-4" style="margin-left: 17%;">
             <div class="container mt-5">
-                <h2 class="mb-4">Quản lý bình luận sản phẩm</h2>
+                <h2 class="mb-4">Quản lý đánh giá sản phẩm</h2>
 
                 <?php if (isset($_GET['success']) || isset($_GET['error'])): ?>
                     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">

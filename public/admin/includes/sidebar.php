@@ -13,7 +13,7 @@
         <li class="nav-item"><a class="nav-link text-dark" href="manage_products.php"><i class="fas fa-box"></i> <span>Sản phẩm</span></a></li>
         <li class="nav-item"><a class="nav-link text-dark" href="manage_shipping.php"><i class="fas fa-truck"></i> <span>Đơn hàng</span></a></li>
         <li class="nav-item"><a class="nav-link text-dark" href="manage_stock.php"><i class="fas fa-warehouse"></i> <span>Kho</span></a></li>
-        <li class="nav-item"><a class="nav-link text-dark" href="manage_reviews.php"><i class="fas fa-comment"></i> <span>Bình luận</span></a></li>
+        <li class="nav-item"><a class="nav-link text-dark" href="manage_reviews.php"><i class="fas fa-star"></i> <span>Đánh giá</span></a></li>
         <li class="nav-item"><a class="nav-link text-dark" href="sales_report.php"><i class="fas fa-chart-line"></i> <span>Thống kê</span></a></li>
         <li class="nav-item"><a class="nav-link text-dark" href="manage_discounts.php"><i class="fas fa-tag"></i> <span>Khuyến mãi</span></a></li>
         <li class="nav-item"><a class="nav-link text-dark" href="manage_news.php"><i class="fas fa-newspaper"></i> <span>Tin tức</span></a></li>
