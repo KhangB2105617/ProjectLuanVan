@@ -1,9 +1,11 @@
 body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
-    margin-top: 90px; /* Tránh bị chồng với header */
+    margin-top: 90px;
+    /* Tránh bị chồng với header */
     min-height: 100vh;
-    background-color: #f8f9fa; /* Màu nền nhẹ giúp giao diện đẹp hơn */
+    background-color: #f8f9fa;
+    /* Màu nền nhẹ giúp giao diện đẹp hơn */
 }
 
 /* === HEADER === */
@@ -13,7 +15,8 @@ header {
     left: 0;
     right: 0;
     z-index: 1000;
-    background:#ddd; /* Đảm bảo màu nền đồng nhất */
+    background: #ddd;
+    /* Đảm bảo màu nền đồng nhất */
 }
 
 .header-logo img {
@@ -23,9 +26,11 @@ header {
 .header-logo img:hover {
     transform: scale(1.05);
 }
+
 .header-account {
     position: relative;
-    z-index: 1050; /* Đảm bảo dropdown hiển thị trên các thành phần khác */
+    z-index: 1050;
+    /* Đảm bảo dropdown hiển thị trên các thành phần khác */
 }
 
 /* === NAVIGATION === */
@@ -68,25 +73,31 @@ header {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 5px; /* Giảm khoảng cách giữa hai hình */
+    gap: 5px;
+    /* Giảm khoảng cách giữa hai hình */
 }
 
 .carousel-item img {
-    max-width: 70%; /* Đảm bảo hai banner vừa khít */
+    max-width: 70%;
+    /* Đảm bảo hai banner vừa khít */
     height: auto;
     border-radius: 10px;
 }
+
 .banner-img {
-    max-width: 49%; /* Đảm bảo hai ảnh nằm trên cùng một hàng */
+    max-width: 49%;
+    /* Đảm bảo hai ảnh nằm trên cùng một hàng */
     height: auto;
-    margin: 0 4px; /* Điều chỉnh khoảng cách giữa hai ảnh */
+    margin: 0 4px;
+    /* Điều chỉnh khoảng cách giữa hai ảnh */
 }
 
 /* === PRODUCT CARD === */
 .card {
     transition: transform 0.2s, box-shadow 0.2s;
     border-radius: 10px;
-    height: 100%; /* 👈 Thêm dòng này */
+    height: 100%;
+    /* 👈 Thêm dòng này */
     display: flex;
     flex-direction: column;
 }
@@ -104,8 +115,10 @@ header {
 
 .card-title {
     font-size: 1rem;
-    min-height: 2.5em; /* Khoảng 2 dòng */
+    min-height: 2.5em;
+    /* Khoảng 2 dòng */
 }
+
 /* === PRODUCT IMAGE === */
 .product-image {
     width: 100%;
@@ -113,11 +126,14 @@ header {
     height: auto;
     border-radius: 5px;
 }
+
 @media (min-width: 992px) {
     .col-lg-2 {
-        flex: 0 0 18%; /* Chiếm 18% chiều rộng */
+        flex: 0 0 18%;
+        /* Chiếm 18% chiều rộng */
         max-width: 18%;
-        margin: 0 1%; /* Tạo khoảng cách hai bên */
+        margin: 0 1%;
+        /* Tạo khoảng cách hai bên */
     }
 }
 
@@ -131,18 +147,22 @@ header {
 
 /* Card Content */
 .card-body {
-    flex: 1; /* Cho phần thân chiếm hết chiều cao còn lại */
+    flex: 1;
+    /* Cho phần thân chiếm hết chiều cao còn lại */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
+
 /* === Đánh giá sao trong card === */
 .rating-stars i {
     font-size: 0.9rem;
 }
+
 .rating-stars small {
     font-size: 0.8rem;
 }
+
 /* AUTH LINK */
 .auth-link:hover {
     color: #007bff !important;
@@ -154,24 +174,29 @@ header {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
+
 .wrapper {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
 }
+
 /* === CSS cho form thanh toán nhỏ gọn === */
 .checkout-page {
     font-family: 'Roboto', sans-serif;
     background-color: #f4f6f9;
     display: flex;
     justify-content: center;
-    padding-top: 0; /* Xóa khoảng cách trên đầu */
-    margin-top: 0; /* Xóa khoảng cách trên đầu */
+    padding-top: 0;
+    /* Xóa khoảng cách trên đầu */
+    margin-top: 0;
+    /* Xóa khoảng cách trên đầu */
 }
 
 .checkout-page .container {
@@ -180,8 +205,10 @@ header {
     box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
     padding: 30px;
     width: 100%;
-    max-width: 500px; /* Giới hạn chiều rộng của form */
-    margin-bottom: 30px; /* Tạo khoảng cách dưới cuối form */
+    max-width: 500px;
+    /* Giới hạn chiều rộng của form */
+    margin-bottom: 30px;
+    /* Tạo khoảng cách dưới cuối form */
 }
 
 /* === Heading === */
@@ -195,7 +222,8 @@ header {
 
 /* === Form Group === */
 .checkout-page .form-group {
-    margin-bottom: 20px; /* Tăng khoảng cách giữa các trường */
+    margin-bottom: 20px;
+    /* Tăng khoảng cách giữa các trường */
 }
 
 .checkout-page .form-group label {
@@ -242,7 +270,8 @@ header {
     padding: 12px 20px;
     cursor: pointer;
     transition: all 0.3s;
-    width: 100%; /* Nút thanh toán chiếm toàn bộ chiều rộng */
+    width: 100%;
+    /* Nút thanh toán chiếm toàn bộ chiều rộng */
 }
 
 .checkout-page button[type="submit"]:hover {
@@ -261,6 +290,7 @@ header {
     margin-top: 20px;
     text-align: center;
 }
+
 .flash-sale-section {
     background: linear-gradient(to right, #f86b96, #fd8ab4);
     border-radius: 20px;
@@ -268,29 +298,34 @@ header {
     margin-bottom: 40px;
     position: relative;
 }
+
 .flash-sale-scroll {
     overflow-x: auto;
     white-space: nowrap;
     scroll-behavior: smooth;
     padding: 10px 0;
 }
+
 .flash-sale-item {
     display: inline-block;
     width: 235px;
     vertical-align: top;
 }
+
 .flash-sale-item .card {
     height: 100%;
 }
+
 .flash-sale-scroll::-webkit-scrollbar {
     display: none;
 }
+
 .nav-left,
 .nav-right {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(255,255,255,0.8);
+    background: rgba(255, 255, 255, 0.8);
     border: none;
     border-radius: 50%;
     padding: 8px 12px;
@@ -298,16 +333,54 @@ header {
     cursor: pointer;
     z-index: 10;
 }
-.nav-left { left: 10px; }
-.nav-right { right: 10px; }
+
+.nav-left {
+    left: 10px;
+}
+
+.nav-right {
+    right: 10px;
+}
+
+.product-name {
+    display: block;
+    width: 200px;
+    /* chiều rộng mong muốn */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#voiceSearchBtn.listening {
+    background-color: #ff4d4d;
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 77, 77, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
+    }
+}
+
 /* === Responsive Design === */
 @media (max-width: 768px) {
     .checkout-page .container {
         padding: 20px;
     }
+
     .checkout-page .form-group {
         margin-bottom: 12px;
     }
+
     .checkout-page button[type="submit"] {
         padding: 10px 15px;
     }

@@ -18,6 +18,18 @@ require_once __DIR__ . '/../bootstrap.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        #voiceSearchBtn.listening {
+            background-color: #ff4d4d;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+        }
+    </style>
 </head>
 
 <body>
@@ -51,12 +63,16 @@ require_once __DIR__ . '/../bootstrap.php';
                 <!-- Search Bar -->
                 <form class="d-flex search-bar" role="search" action="search.php" method="get">
                     <div class="input-group">
-                        <input type="text" name="q" class="form-control" placeholder="Tìm kiếm sản phẩm...">
+                        <input type="text" id="searchInput" name="q" class="form-control" placeholder="Tìm kiếm sản phẩm...">
+                        <button class="btn btn-secondary" type="button" id="voiceSearchBtn" title="Tìm kiếm bằng giọng nói">
+                            <i class="fas fa-microphone"></i>
+                        </button>
                         <button class="btn btn-primary" type="submit">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
                 </form>
+
 
                 <!-- User Account -->
                 <div class="d-flex align-items-center">
@@ -128,3 +144,39 @@ require_once __DIR__ . '/../bootstrap.php';
             </div>
         </div>
     </header>
+     <!-- Script tìm kiếm giọng nói -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const voiceBtn = document.getElementById("voiceSearchBtn");
+        const searchInput = document.getElementById("searchInput");
+
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = 'vi-VN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            voiceBtn.addEventListener("click", () => {
+                recognition.start();
+                voiceBtn.classList.add("listening");
+            });
+
+            recognition.onresult = function (event) {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                voiceBtn.classList.remove("listening");
+            };
+
+            recognition.onerror = function () {
+                voiceBtn.classList.remove("listening");
+            };
+
+            recognition.onend = function () {
+                voiceBtn.classList.remove("listening");
+            };
+        } else {
+            voiceBtn.disabled = true;
+            voiceBtn.title = "Trình duyệt không hỗ trợ tìm kiếm bằng giọng nói";
+        }
+    });
+    </script>

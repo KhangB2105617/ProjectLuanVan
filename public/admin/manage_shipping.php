@@ -116,6 +116,7 @@ include 'includes/header.php';
                         <label for="status" class="form-label">Trạng thái đơn hàng</label>
                         <select name="status" id="status" class="form-select">
                             <option value="">-- Tất cả --</option>
+                            <option value="Chờ xử lý" <?= ($_GET['status'] ?? '') == 'Chờ xử lý' ? 'selected' : '' ?>>Chờ xử lý</option>
                             <option value="Đang xử lý" <?= ($_GET['status'] ?? '') == 'Đang xử lý' ? 'selected' : '' ?>>Đang xử lý</option>
                             <option value="Đang vận chuyển" <?= ($_GET['status'] ?? '') == 'Đang vận chuyển' ? 'selected' : '' ?>>Đang vận chuyển</option>
                             <option value="Đã giao" <?= ($_GET['status'] ?? '') == 'Đã giao' ? 'selected' : '' ?>>Đã giao</option>
@@ -169,7 +170,7 @@ include 'includes/header.php';
                             <th>Phương thức</th>
                             <th>Ngày đặt</th>
                             <th>Trạng thái</th>
-                            <th>Xóa</th>
+                            <th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,6 +212,7 @@ include 'includes/header.php';
                                         $selectStyle = 'background-color: #dc3545; color: #fff;'; // đỏ
                                     } else {
                                         $statusColors = [
+                                            'Chờ xử lý' => 'background-color: #6c757d; color: #fff;',
                                             'Đang xử lý' => 'background-color: #ffc107; color: #000;',
                                             'Đang vận chuyển' => 'background-color: #17a2b8; color: #fff;',
                                             'Đã giao' => 'background-color: #28a745; color: #fff;',
@@ -232,6 +234,9 @@ include 'includes/header.php';
                                                 class="form-select form-select-sm fw-bold text-center rounded-pill shadow-sm border-0"
                                                 style="min-width: 180px; <?= $selectStyle ?>"
                                                 onchange="this.form.submit()">
+                                                <option value="Chờ xử lý" <?= $status == 'Chờ xử lý' ? 'selected' : '' ?>>
+                                                    ⏳ Chờ xử lý
+                                                </option>
                                                 <option value="Đang xử lý" <?= $status == 'Đang xử lý' ? 'selected' : '' ?>>
                                                     🕒 Đang xử lý
                                                 </option>
@@ -256,7 +261,14 @@ include 'includes/header.php';
                                         <p class="text-danger mt-2">Yêu cầu hủy bị từ chối</p>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td class="text-center" style="min-width: 100px;">
+                                    <!-- Nút in hóa đơn -->
+                                    <a href="invoice.php?id=<?= urlencode($data['info']->id) ?>"
+                                        target="_blank"
+                                        class="btn btn-success btn-sm">
+                                        In hóa đơn
+                                    </a>
+
                                     <form method="post" style="display:inline;">
                                         <input type="hidden" name="delete_order_id" value="<?= htmlspecialchars($data['info']->id) ?>">
                                         <button type="submit" class="btn btn-danger btn-sm mt-2">Xóa</button>

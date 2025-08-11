@@ -1,29 +1,48 @@
 <?php
 session_start();
-require_once __DIR__ . '/../src/bootstrap.php';
+require_once __DIR__ . '/../../src/bootstrap.php';
 
 $orderId = $_GET['id'] ?? null;
 $username = $_SESSION['username'] ?? null;
+$role = $_SESSION['role'] ?? 'user'; // Giả sử role lưu trong session, admin = 'admin'
 
-if (!$orderId || !$username) {
+if (!$orderId) {
     die('❌ Thiếu thông tin đơn hàng.');
 }
 
-$stmt = $PDO->prepare("
-    SELECT o.id AS order_id, o.created_at AS order_date, o.status, o.total_price,
-           o.discount_code, o.discount_amount, o.payment_method,
-           oi.product_name, oi.quantity, oi.price,
-           u.username, u.email, u.address, u.phone
-    FROM orders o
-    JOIN order_items oi ON o.id = oi.order_id
-    JOIN users u ON o.username = u.username
-    WHERE o.id = :order_id AND o.username = :username
-");
-
-$stmt->execute([
-    'order_id' => $orderId,
-    'username' => $username
-]);
+if ($role === 'admin') {
+    // Admin: không ràng buộc username
+    $stmt = $PDO->prepare("
+        SELECT o.id AS order_id, o.created_at AS order_date, o.status, o.total_price,
+               o.discount_code, o.discount_amount, o.payment_method,
+               oi.product_name, oi.quantity, oi.price,
+               u.username, u.email, u.address, u.phone
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN users u ON o.username = u.username
+        WHERE o.id = :order_id
+    ");
+    $stmt->execute(['order_id' => $orderId]);
+} else {
+    // Khách hàng: chỉ xem đơn hàng của mình
+    if (!$username) {
+        die('❌ Bạn chưa đăng nhập.');
+    }
+    $stmt = $PDO->prepare("
+        SELECT o.id AS order_id, o.created_at AS order_date, o.status, o.total_price,
+               o.discount_code, o.discount_amount, o.payment_method,
+               oi.product_name, oi.quantity, oi.price,
+               u.username, u.email, u.address, u.phone
+        FROM orders o
+        JOIN order_items oi ON o.id = oi.order_id
+        JOIN users u ON o.username = u.username
+        WHERE o.id = :order_id AND o.username = :username
+    ");
+    $stmt->execute([
+        'order_id' => $orderId,
+        'username' => $username
+    ]);
+}
 
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -31,7 +50,7 @@ if (empty($rows)) {
     die('❌ Không tìm thấy đơn hàng.');
 }
 
-// Tách dữ liệu
+// Tách dữ liệu đơn hàng
 $order = [
     'order_id' => $rows[0]['order_id'],
     'order_date' => $rows[0]['order_date'],
@@ -203,7 +222,7 @@ foreach ($rows as $row) {
 
     <div class="text-center" style="margin-top: 30px;">
         <button onclick="window.print()">🖨️ In hóa đơn</button>
-        <a href="/orders.php" class="btn btn-secondary" style="margin-right: 10px;">🔙 Quay lại đơn hàng</a>
+        <a href="manage_shipping.php" class="btn btn-secondary" style="margin-right: 10px;">🔙 Quay lại</a>
     </div>
 </body>
 

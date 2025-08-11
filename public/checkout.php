@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $address,
             $phone,
             $totalAfterDiscount,
-            'đang xử lý',
+            'chờ xử lý',
             $paymentMethod,
             $discountCode,
             round($discountAmount)

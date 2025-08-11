@@ -29,17 +29,17 @@ class Product
     }
 
     public function getVisibleProducts()
-{
-    $stmt = $this->db->prepare("
+    {
+        $stmt = $this->db->prepare("
         SELECT p.*, b.name AS brand_name, c.name AS category_name
         FROM products p
         JOIN brands b ON p.brand_id = b.id
         JOIN categories c ON p.category_id = c.id
         WHERE p.deleted_at IS NULL AND p.is_visible = 1
     ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_OBJ);
-}
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_OBJ);
+    }
 
     // Lấy chi tiết sản phẩm theo id (có tên thương hiệu và danh mục)
     public function getById($id)
@@ -213,19 +213,38 @@ class Product
         return $str;
     }
 
-    // Tìm kiếm sản phẩm (có lọc theo tên và mô tả)
+    // Tìm kiếm sản phẩm
     public function searchProducts($searchTerm)
     {
         $normalized = $this->removeVietnameseTones($searchTerm);
         $normalized = mb_strtolower($normalized, 'UTF-8');
+
+        $keywords = preg_split('/\s+/', trim($normalized));
 
         $allProducts = $this->getAll();
         $results = [];
 
         foreach ($allProducts as $product) {
             $nameNorm = mb_strtolower($this->removeVietnameseTones($product->name), 'UTF-8');
+            $brandNorm = mb_strtolower($this->removeVietnameseTones($product->brand_name ?? ''), 'UTF-8');
 
-            if (strpos($nameNorm, $normalized) !== false) {
+            // Nếu là phụ kiện thì bỏ chữ "dong ho" ra khỏi tên khi so sánh
+            if ($product->category_id == 5) { // ví dụ category_id = 5 là phụ kiện
+                $nameNorm = str_replace('dong ho', '', $nameNorm);
+            }
+
+            $match = true;
+            foreach ($keywords as $keyword) {
+                if (
+                    strpos($nameNorm, $keyword) === false &&
+                    strpos($brandNorm, $keyword) === false
+                ) {
+                    $match = false;
+                    break;
+                }
+            }
+
+            if ($match) {
                 $results[] = $product;
             }
         }
@@ -261,8 +280,8 @@ class Product
         return $stmt->fetch(PDO::FETCH_OBJ);
     }
     public function getTotalProducts(): int
-{
-    $stmt = $this->db->query("SELECT COUNT(*) FROM products WHERE deleted_at IS NULL");
-    return (int) $stmt->fetchColumn();
-}
+    {
+        $stmt = $this->db->query("SELECT COUNT(*) FROM products WHERE deleted_at IS NULL");
+        return (int) $stmt->fetchColumn();
+    }
 }

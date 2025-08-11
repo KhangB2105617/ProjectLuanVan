@@ -271,7 +271,7 @@ class Order
         return $stmt->execute([$orderId]);
     }
 
-    public function create($userId, array $cartItems, float $totalPrice, string $paymentMethod = 'vnpay', string $status = 'đang xử lý')
+    public function create($userId, array $cartItems, float $totalPrice, string $paymentMethod = 'vnpay', string $status = 'chờ xử lý')
     {
         // Lấy thông tin người dùng từ bảng users
         $stmt = $this->pdo->prepare("SELECT * FROM users WHERE id = ?");

@@ -41,6 +41,14 @@ foreach ($reviews as $review) {
 $stmt = $PDO->prepare("SELECT * FROM product_details WHERE product_id = ?");
 $stmt->execute([$productId]);
 $details = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$categoryId = $product->category_id;
+
+if (in_array($categoryId, [1, 2])) {
+    $title = "Đồng hồ " . $product->name;
+} else {
+    $title = $product->name;
+}
 ?>
 
 <div class="wrapper">
@@ -103,7 +111,7 @@ $details = $stmt->fetch(PDO::FETCH_ASSOC);
                 </script>
 
                 <div class="col-md-8">
-                    <h1 class="mb-2">Đồng hồ <?= htmlspecialchars($product->name); ?></h1>
+                    <h1 class="mb-2"><?= htmlspecialchars($title); ?></h1>
                     <p class="text-muted"><?= htmlspecialchars($product->category_name); ?></p>
                     <p class="text-muted text-decoration-line-through mb-0">
                         <?= number_format($product->original_price, 0, ',', '.'); ?>đ

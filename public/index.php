@@ -118,7 +118,7 @@ $products = $order->getTopSellingProducts(5); // lấy top 5 bán chạy
                                     <?php endif; ?>
                                     <img src="/assets/img/<?= htmlspecialchars($product->image) ?>" class="card-img-top" alt="<?= htmlspecialchars($product->name) ?>">
                                     <div class="card-body p-2">
-                                        <h5 class="card-title"><?= htmlspecialchars($product->name) ?></h5>
+                                        <h5 class="card-title product-name"><?= htmlspecialchars($product->name) ?></h5>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <p class="text-muted text-decoration-line-through mb-0">
                                                 <?= number_format($product->original_price, 0, ',', '.') ?>đ
@@ -156,7 +156,7 @@ $products = $order->getTopSellingProducts(5); // lấy top 5 bán chạy
                                     <?php endif; ?>
                                     <img src="/assets/img/<?= htmlspecialchars($product['image']); ?>" class="card-img-top" alt="<?= htmlspecialchars($product['name']); ?>">
                                     <div class="card-body p-2">
-                                        <h5 class="card-title">
+                                        <h5 class="card-title product-name">
                                             <?= htmlspecialchars($product['name']); ?>
                                         </h5>
                                         <p class="mb-0 text-muted"><small>Đã bán: <?= $product['total_quantity'] ?></small></p>
