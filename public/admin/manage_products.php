@@ -25,7 +25,7 @@ include 'includes/header.php';
     <div class="row">
         <?php include 'includes/sidebar.php'; ?>
 
-        <main class="col-md-10 ms-sm-auto px-md-4" style="margin-left: 17%;">
+        <main class="col-md-10 ms-sm-auto" style="margin-left: 17%;">
             <div class="pt-4">
                 <h1 class="mb-4">Quản lý sản phẩm</h1>
                 <form class="row g-3 mb-3" method="GET" style="max-width: 400px;">
@@ -40,8 +40,8 @@ include 'includes/header.php';
                 <a href="add_product.php" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Thêm sản phẩm</a>
                 <a href="deleted_products.php" class="btn btn-outline-secondary mb-3"><i class="fas fa-trash"></i> Xem sản phẩm đã xóa</a>
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-hover">
-                        <thead>
+                    <table id="productsTable" class="table table-striped table-hover table-bordered table-custom align-middle">
+                        <thead class="table-primary">
                             <tr>
                                 <th>Hình ảnh</th>
                                 <th>ID</th>
@@ -132,6 +132,25 @@ include 'includes/header.php';
             var button = event.relatedTarget;
             var productId = button.getAttribute('data-id');
             document.getElementById('deleteProductId').value = productId;
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        $('#productsTable').DataTable({
+            "searching": false,
+            "language": {
+                "lengthMenu": "Hiển thị _MENU_ sản phẩm",
+                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ sản phẩm",
+                "paginate": {
+                    "first": "Đầu",
+                    "last": "Cuối",
+                    "next": "Tiếp",
+                    "previous": "Trước"
+                },
+                "emptyTable": "Không có dữ liệu trong bảng",
+                "zeroRecords": "Không tìm thấy sản phẩm phù hợp",
+            }
         });
     });
 </script>

@@ -43,8 +43,8 @@ include 'includes/header.php';
                 <a href="add_news.php" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Thêm tin tức</a>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-hover">
-                        <thead>
+                    <table id="productsTable" class="table table-bordered table-striped table-hover">
+                        <thead class="table-primary">
                             <tr>
                                 <th>Hình ảnh</th>
                                 <th>ID</th>
@@ -114,7 +114,25 @@ include 'includes/header.php';
         });
     });
 </script>
-
+<script>
+    $(document).ready(function() {
+        $('#productsTable').DataTable({
+            "language": {
+                "search": "Tìm kiếm:",
+                "lengthMenu": "Hiển thị _MENU_ tin tức",
+                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ tin tức",
+                "paginate": {
+                    "first": "Đầu",
+                    "last": "Cuối",
+                    "next": "Tiếp",
+                    "previous": "Trước"
+                },
+                "emptyTable": "Không có dữ liệu trong bảng",
+                "zeroRecords": "Không tìm thấy sản phẩm phù hợp",
+            }
+        });
+    });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

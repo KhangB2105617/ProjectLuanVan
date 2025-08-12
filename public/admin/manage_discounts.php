@@ -28,9 +28,9 @@ include 'includes/header.php';
                     <i class="fas fa-plus"></i> Thêm mã giảm giá
                 </a>
 
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped table-hover text-center align-middle">
-                        <thead>
+                <div  class="table-responsive">
+                    <table id="productsTable" class="table table-bordered table-striped table-hover text-center align-middle">
+                        <thead class="table-primary">
                             <tr>
                                 <th>ID</th>
                                 <th>Mã</th>
@@ -84,7 +84,25 @@ include 'includes/header.php';
         </main>
     </div>
 </div>
-
+<script>
+    $(document).ready(function() {
+        $('#productsTable').DataTable({
+            "language": {
+                "search": "Tìm kiếm:",
+                "lengthMenu": "Hiển thị _MENU_ mã khuyến mãi",
+                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ mã khuyến mãi",
+                "paginate": {
+                    "first": "Đầu",
+                    "last": "Cuối",
+                    "next": "Tiếp",
+                    "previous": "Trước"
+                },
+                "emptyTable": "Không có dữ liệu trong bảng",
+                "zeroRecords": "Không tìm thấy sản phẩm phù hợp",
+            }
+        });
+    });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 

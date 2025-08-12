@@ -61,11 +61,17 @@ if ($responseCode === '00') {
     $stmt->execute([$responseCode, $_GET['vnp_Message'] ?? '', $txnRef]);
 
     // Cập nhật đơn hàng
-    $stmt = $PDO->prepare("UPDATE orders SET status = 'đang xử lý' WHERE id = ?");
+    $stmt = $PDO->prepare("UPDATE orders SET status = 'chờ xử lý' WHERE id = ?");
     $stmt->execute([$orderId]);
     // XÓA GIỎ HÀNG
     if (isset($_SESSION['cart'])) {
         unset($_SESSION['cart']);
+    }
+    // Xóa giỏ hàng trong DB cho user hiện tại
+    $userId = $_SESSION['user_id'] ?? null;
+    if ($userId) {
+        $stmt = $PDO->prepare("DELETE FROM cart_items WHERE user_id = ?");
+        $stmt->execute([$userId]);
     }
     header("Location: order_success.php?order_id=$orderId");
     exit;

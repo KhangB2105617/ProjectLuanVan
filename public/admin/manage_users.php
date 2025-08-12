@@ -22,8 +22,8 @@ include 'includes/header.php';
             <div class="pt-4">
                 <h1 class="mb-4">Quản lý người dùng</h1>
                 <a href="add_user.php" class="btn btn-success mb-3"><i class="fas fa-plus"></i> Thêm người dùng</a>
-                <table class="table table-bordered">
-                    <thead>
+                <table id="productsTable" class="table table-bordered">
+                    <thead class="table-primary">
                         <tr>
                             <th>ID</th>
                             <th>Tên</th>
@@ -52,5 +52,23 @@ include 'includes/header.php';
     </div>
 </div>
 </body>
-
+<script>
+    $(document).ready(function() {
+        $('#productsTable').DataTable({
+            "language": {
+                "search": "Tìm kiếm:",
+                "lengthMenu": "Hiển thị _MENU_ tin tức",
+                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ tin tức",
+                "paginate": {
+                    "first": "Đầu",
+                    "last": "Cuối",
+                    "next": "Tiếp",
+                    "previous": "Trước"
+                },
+                "emptyTable": "Không có dữ liệu trong bảng",
+                "zeroRecords": "Không tìm thấy sản phẩm phù hợp",
+            }
+        });
+    });
+</script>
 </html>

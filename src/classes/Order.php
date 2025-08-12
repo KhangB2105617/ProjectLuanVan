@@ -35,7 +35,7 @@ class Order
         FROM orders o
         JOIN order_items oi ON o.id = oi.order_id
         JOIN products p ON oi.product_id = p.id
-        ORDER BY o.id DESC
+        ORDER BY o.created_at DESC
     ");
         return $stmt->fetchAll(PDO::FETCH_OBJ);
     }
