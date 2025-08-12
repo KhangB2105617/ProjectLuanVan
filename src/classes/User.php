@@ -19,6 +19,7 @@ class User
     public $created_at;
     public $role;
     public $avatar;
+    public $is_deleted = 0;
 
     public function __construct(?PDO $pdo)
     {
@@ -36,6 +37,7 @@ class User
         $this->birthday = $data['birthday'] ?? null;
         $this->role = $data['role'] ?? 'customer';
         $this->avatar = $data['avatar'] ?? '';
+        $this->is_deleted = $data['is_deleted'] ?? 0;
         return $this;
     }
 
@@ -85,6 +87,14 @@ class User
         return $User;
     }
 
+    // Lấy tất cả user chưa bị xóa
+    public function getAllActive()
+    {
+        $stmt = $this->db->query("SELECT * FROM users WHERE is_deleted = 0");
+        $stmt->setFetchMode(\PDO::FETCH_OBJ);
+        return $stmt->fetchAll();
+    }
+
     protected function fillFromDbRow(array $row): User
     {
         $this->id = $row['id'];
@@ -98,6 +108,7 @@ class User
         $this->role = $row['role'];
         $this->created_at = $row['created_at'];
         $this->avatar = $row['avatar'];
+        $this->is_deleted = $row['is_deleted'] ?? 0;
 
         return $this;
     }
@@ -232,12 +243,29 @@ class User
         return $stmt->execute($data);
     }
 
-    // Xóa người dùng
+    // Xóa mềm (soft delete)
     public function delete($id)
     {
-        $stmt = $this->db->prepare("DELETE FROM users WHERE id = :id");
+        // Không cho xóa admin
+        $stmt = $this->db->prepare("SELECT role FROM users WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $role = $stmt->fetchColumn();
+        if ($role === 'admin') {
+            return false;
+        }
+
+        // Cập nhật is_deleted = 1
+        $stmt = $this->db->prepare("UPDATE users SET is_deleted = 1 WHERE id = :id");
         return $stmt->execute([':id' => $id]);
     }
+
+    // Khôi phục
+    public function restore($id)
+    {
+        $stmt = $this->db->prepare("UPDATE users SET is_deleted = 0 WHERE id = :id");
+        return $stmt->execute([':id' => $id]);
+    }
+
     public function updateProfile($id, $data)
     {
         $sql = "UPDATE users SET username = :username, email = :email, address = :address, phone = :phone, birthday = :birthday, gender = :gender";

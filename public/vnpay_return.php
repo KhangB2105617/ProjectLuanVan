@@ -76,5 +76,9 @@ if ($responseCode === '00') {
     header("Location: order_success.php?order_id=$orderId");
     exit;
 } else {
+    if (isset($_SESSION['cart'])) {
+        unset($_SESSION['cart']);
+    }
+    header("Location: order_success.php?order_id=$orderId");
     echo "<h2>❌ Thanh toán thất bại: " . htmlspecialchars($_GET['vnp_Message'] ?? '') . "</h2>";
 }

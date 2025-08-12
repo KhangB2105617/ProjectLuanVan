@@ -137,6 +137,7 @@ include 'includes/header.php';
 </script>
 <script>
     $(document).ready(function() {
+        $.fn.dataTable.ext.errMode = 'none';
         $('#productsTable').DataTable({
             "searching": false,
             "language": {

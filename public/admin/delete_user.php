@@ -3,10 +3,12 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 use NL\User;
 
 $user = new User($PDO);
-$id = $_GET['id'];
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($user->delete($id)) {
+    // Soft delete: chỉ đánh dấu is_deleted = 1
+    $stmt = $PDO->prepare("UPDATE users SET is_deleted = 1 WHERE id = :id");
+    if ($stmt->execute([':id' => $id])) {
         header("Location: manage_users.php?success=1");
         exit();
     } else {

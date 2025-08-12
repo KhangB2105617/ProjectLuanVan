@@ -66,12 +66,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <label for="role">Vai trò</label>
-                <select name="role" class="form-select">
-                    <option value="admin" <?= ($user->role === 'admin') ? 'selected' : '' ?>>Quản trị viên</option>
-                    <option value="staff" <?= ($user->role === 'staff') ? 'selected' : '' ?>>Nhân viên</option>
-                    <option value="customer" <?= ($user->role === 'customer') ? 'selected' : '' ?>>Khách hàng</option>
+                <select name="role" class="form-select" <?= ($userData->role === 'admin') ? 'disabled' : '' ?>>
+                    <option value="admin" <?= ($userData->role === 'admin') ? 'selected' : '' ?>>Quản trị viên</option>
+                    <?php if ($userData->role !== 'admin'): ?>
+                        <option value="staff" <?= ($userData->role === 'staff') ? 'selected' : '' ?>>Nhân viên</option>
+                        <option value="customer" <?= ($userData->role === 'customer') ? 'selected' : '' ?>>Khách hàng</option>
+                    <?php endif; ?>
                 </select>
             </div>
+
             <button type="submit" class="btn btn-primary">Cập nhật</button>
             <a href="manage_users.php" class="btn btn-secondary">Quay lại</a>
         </form>

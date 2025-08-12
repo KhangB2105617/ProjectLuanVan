@@ -1,4 +1,4 @@
-<?php
+<?php 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
@@ -10,8 +10,9 @@ require_once __DIR__ . '/../../src/bootstrap.php';
 
 use NL\User;
 
-$user = new User($PDO);
-$users = $user->getAll();
+$userModel = new User($PDO);
+// Lấy cả user đã bị xóa (is_deleted = 1)
+$users = $userModel->getAll();
 
 include 'includes/header.php';
 ?>
@@ -33,15 +34,20 @@ include 'includes/header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($users as $user): ?>
-                            <tr>
-                                <td><?= $user->id ?></td>
-                                <td><?= htmlspecialchars($user->username) ?></td>
-                                <td><?= htmlspecialchars($user->email) ?></td>
-                                <td><?= htmlspecialchars($user->role) ?></td>
+                        <?php foreach ($users as $u): ?>
+                            <?php $isDeleted = ($u->is_deleted == 1); ?>
+                            <tr class="<?= $isDeleted ? 'table-secondary text-muted' : '' ?>" style="<?= $isDeleted ? 'opacity:0.5;' : '' ?>">
+                                <td><?= $u->id ?></td>
+                                <td><?= htmlspecialchars($u->username) ?></td>
+                                <td><?= htmlspecialchars($u->email) ?></td>
+                                <td><?= htmlspecialchars($u->role) ?></td>
                                 <td>
-                                    <a href="edit_user.php?id=<?= $user->id ?>" class="btn btn-warning btn-sm">Sửa</a>
-                                    <a href="delete_user.php?id=<?= $user->id ?>" class="btn btn-danger btn-sm">Xóa</a>
+                                    <?php if (!$isDeleted): ?>
+                                        <a href="edit_user.php?id=<?= $u->id ?>" class="btn btn-warning btn-sm">Sửa</a>
+                                        <a href="delete_user.php?id=<?= $u->id ?>" class="btn btn-danger btn-sm">Xóa</a>
+                                    <?php else: ?>
+                                        <a href="restore_user.php?id=<?= $u->id ?>" class="btn btn-success btn-sm">Khôi phục</a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -57,8 +63,8 @@ include 'includes/header.php';
         $('#productsTable').DataTable({
             "language": {
                 "search": "Tìm kiếm:",
-                "lengthMenu": "Hiển thị _MENU_ tin tức",
-                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ tin tức",
+                "lengthMenu": "Hiển thị _MENU_ người dùng",
+                "info": "Hiển thị từ _START_ đến _END_ trong tổng _TOTAL_ người dùng",
                 "paginate": {
                     "first": "Đầu",
                     "last": "Cuối",
@@ -66,7 +72,7 @@ include 'includes/header.php';
                     "previous": "Trước"
                 },
                 "emptyTable": "Không có dữ liệu trong bảng",
-                "zeroRecords": "Không tìm thấy sản phẩm phù hợp",
+                "zeroRecords": "Không tìm thấy người dùng phù hợp",
             }
         });
     });

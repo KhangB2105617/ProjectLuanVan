@@ -38,6 +38,16 @@ if (empty($cart)) {
 
 $productIds = array_keys($cart);
 $products = $productModel->getProductsByIds($productIds);
+
+$hasAvailableProduct = false;
+foreach ($products as $product) {
+    if ((int)$product->quantity > 0) {
+        $hasAvailableProduct = true;
+        break;
+    }
+}
+
+
 $totalPrice = 0;
 ?>
 
@@ -104,72 +114,80 @@ $totalPrice = 0;
             </table>
         </div>
         <div class="d-flex justify-content-end">
-            <a href="checkout.php" class="btn btn-success">Thanh toán</a>
+            <!-- Nút thanh toán -->
+            <a href="<?= $hasAvailableProduct ? 'checkout.php' : 'javascript:void(0);' ?>"
+                class="btn btn-success <?= $hasAvailableProduct ? '' : 'disabled' ?>"
+                <?= $hasAvailableProduct ? '' : 'title="Không có sản phẩm còn hàng để thanh toán."' ?>>
+                Thanh toán
+            </a>
+
         </div>
     </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const inputs = document.querySelectorAll('.quantity-input');
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputs = document.querySelectorAll('.quantity-input');
 
-    inputs.forEach(input => {
-        input.addEventListener('input', function() {
-            const productId = this.dataset.id;
-            const max = parseInt(this.dataset.max);
-            let quantity = parseInt(this.value);
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                const productId = this.dataset.id;
+                const max = parseInt(this.dataset.max);
+                let quantity = parseInt(this.value);
 
-            if (!Number.isInteger(quantity) || isNaN(quantity) || quantity < 1) {
-                quantity = 1;
-                this.value = 1;
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Số lượng không hợp lệ',
-                    text: 'Số lượng phải từ 1 trở lên.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            }
-
-            if (quantity > max) {
-                quantity = max;
-                this.value = max;
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Vượt quá tồn kho',
-                    text: `Chỉ còn ${max} sản phẩm trong kho.`,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            }
-
-            fetch('update-cart.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update',
-                    product_id: productId,
-                    quantity: quantity
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    const row = input.closest('tr');
-                    row.querySelector('.subtotal').textContent = data.subtotal_formatted + ' VNĐ';
-                    document.getElementById('total-price').textContent = data.total_formatted + ' VNĐ';
-                } else {
+                if (!Number.isInteger(quantity) || isNaN(quantity) || quantity < 1) {
+                    quantity = 1;
+                    this.value = 1;
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi',
-                        text: data.message || 'Đã xảy ra lỗi.'
+                        icon: 'warning',
+                        title: 'Số lượng không hợp lệ',
+                        text: 'Số lượng phải từ 1 trở lên.',
+                        timer: 2000,
+                        showConfirmButton: false
                     });
                 }
+
+                if (quantity > max) {
+                    quantity = max;
+                    this.value = max;
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Vượt quá tồn kho',
+                        text: `Chỉ còn ${max} sản phẩm trong kho.`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+
+                fetch('update-cart.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'update',
+                            product_id: productId,
+                            quantity: quantity
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const row = input.closest('tr');
+                            row.querySelector('.subtotal').textContent = data.subtotal_formatted + ' VNĐ';
+                            document.getElementById('total-price').textContent = data.total_formatted + ' VNĐ';
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: data.message || 'Đã xảy ra lỗi.'
+                            });
+                        }
+                    });
             });
         });
     });
-});
 </script>
 
 <?php if (!empty($_SESSION['error'])): ?>

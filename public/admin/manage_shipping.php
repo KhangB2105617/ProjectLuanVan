@@ -10,8 +10,10 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'staff']
 }
 
 use NL\Order;
+use NL\Stock;
 
 $order = new Order($PDO);
+$stockModel = new Stock($PDO);
 function groupOrders($orders)
 {
     $grouped = [];
@@ -45,10 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id']) && isset(
 
     // Cập nhật trạng thái đơn hàng
     if ($order->updateOrderStatus($orderId, $newStatus)) {
-        // Nếu cập nhật thành công
+        if ($newStatus === 'Đang xử lý') {
+            // Lấy chi tiết sản phẩm trong đơn
+            $orderItems = $order->getOrderItems($orderId);
+            foreach ($orderItems as $item) {
+                // Trừ tồn kho từng sản phẩm
+                $stockModel->updateStockQuantity($item['product_id'], $item['quantity'], 'out', null, null, null, false);
+            }
+        }
         $success = "Cập nhật trạng thái đơn hàng thành công!";
     } else {
-        // Nếu cập nhật thất bại
         $error = "Cập nhật trạng thái vận chuyển thất bại.";
     }
 
@@ -87,6 +95,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
 
     if (!is_null($approve)) {
         if ($approve === 1) {
+            // Lấy trạng thái đơn hàng hiện tại
+            $stmtStatus = $PDO->prepare("SELECT status FROM orders WHERE id = :id");
+            $stmtStatus->execute(['id' => $orderId]);
+            $orderStatus = $stmtStatus->fetchColumn();
+
             // Duyệt hủy đơn hàng
             $stmt = $PDO->prepare("UPDATE orders SET cancel_approved = :approve WHERE id = :id");
             $stmt->execute([
@@ -99,35 +112,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cancel_order_id'])) {
             $stmtItems->execute(['order_id' => $orderId]);
             $items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
-            $stmtUpdateStock = $PDO->prepare("UPDATE products SET quantity = quantity + :quantity WHERE id = :product_id");
-            foreach ($items as $item) {
-                if (!$stmtUpdateStock->execute([
-                    'quantity' => $item['quantity'],
-                    'product_id' => $item['product_id']
-                ])) {
-                    print_r($stmtUpdateStock->errorInfo());
+            // Chỉ cộng lại kho nếu đơn đã trừ kho trước đó
+            if ($orderStatus === 'Đang xử lý') {
+                foreach ($items as $item) {
+                    $stockModel->updateStockQuantity(
+                        $item['product_id'],
+                        $item['quantity'],
+                        'in',      // nhập kho
+                        null,      // import_price
+                        null,      // export_price
+                        null,      // user_id
+                        false      // không ghi log
+                    );
                 }
             }
 
-
-            $success = "Đã duyệt yêu cầu hủy đơn hàng và cập nhật tồn kho.";
-        } else {
-            // Từ chối hủy đơn hàng
-            $stmt = $PDO->prepare("UPDATE orders SET cancel_approved = :approve WHERE id = :id");
-            $stmt->execute([
-                'approve' => $approve,
-                'id' => $orderId
-            ]);
-            $success = "Đã từ chối yêu cầu hủy đơn hàng.";
+            $success = "Đã duyệt yêu cầu hủy đơn hàng" .
+                (in_array($orderStatus, ['Đang xử lý', 'Đang giao']) ? " và cập nhật tồn kho." : ".");
         }
-
-        // Tải lại danh sách đơn hàng mới nhất
-        $orders = $order->getAllOrders();
-        $groupedOrders = groupOrders($orders);
     } else {
-        $error = "Yêu cầu không hợp lệ.";
+        // Từ chối hủy đơn hàng
+        $stmt = $PDO->prepare("UPDATE orders SET cancel_approved = :approve WHERE id = :id");
+        $stmt->execute([
+            'approve' => $approve,
+            'id' => $orderId
+        ]);
+        $success = "Đã từ chối yêu cầu hủy đơn hàng.";
     }
+
+    // Tải lại danh sách đơn hàng mới nhất
+    $orders = $order->getAllOrders();
+    $groupedOrders = groupOrders($orders);
 }
+
 // Thêm hàm lấy trạng thái thanh toán VNPay cho 1 order_id
 function getVNPayStatus(PDO $pdo, int $orderId): ?string
 {
@@ -262,10 +279,10 @@ include 'includes/header.php';
                                 $productNames = array_map(fn($item) => $item['product_name'], $data['items']);
                                 $title = implode(', ', $productNames);
                                 ?>
-                                <td title="<?= htmlspecialchars($title) ?>">
+                                <td>
                                     <ul class="list-unstyled">
                                         <?php foreach ($data['items'] as $item): ?>
-                                            <li>- <?= htmlspecialchars($item['product_name']) ?></li>
+                                            <li title="<?= htmlspecialchars($item['product_name']) ?>">- <?= htmlspecialchars($item['product_name']) ?></li>
                                         <?php endforeach; ?>
                                     </ul>
                                 </td>
@@ -332,26 +349,55 @@ include 'includes/header.php';
                                             style="min-width: 180px; <?= $selectStyle ?>">Đã hủy
                                         </span>
                                     <?php else: ?>
+                                        <?php
+                                        $statusOptions = [
+                                            'Chờ xử lý',
+                                            'Đang xử lý',
+                                            'Đang vận chuyển',
+                                            'Đã giao',
+                                        ];
+
+                                        $currentIndex = array_search($status, $statusOptions);
+                                        ?>
+
                                         <form method="post" class="d-inline">
                                             <input type="hidden" name="order_id" value="<?= htmlspecialchars($data['info']->id) ?>">
                                             <select name="status"
                                                 class="form-select form-select-sm fw-bold text-center rounded-pill shadow-sm border-0"
                                                 style="min-width: 180px; <?= $selectStyle ?>"
                                                 onchange="this.form.submit()">
-                                                <option value="Chờ xử lý" <?= $status == 'Chờ xử lý' ? 'selected' : '' ?>>
-                                                    ⏳ Chờ xử lý
-                                                </option>
-                                                <option value="Đang xử lý" <?= $status == 'Đang xử lý' ? 'selected' : '' ?>>
-                                                    🕒 Đang xử lý
-                                                </option>
-                                                <option value="Đang vận chuyển" <?= $status == 'Đang vận chuyển' ? 'selected' : '' ?>>
-                                                    🚚 Đang vận chuyển
-                                                </option>
-                                                <option value="Đã giao" <?= $status == 'Đã giao' ? 'selected' : '' ?>>
-                                                    ✅ Đã giao
-                                                </option>
+                                                <?php foreach ($statusOptions as $index => $option):
+                                                    // Cho phép chỉ trạng thái hiện tại và trạng thái kế tiếp
+                                                    $disabled = false;
+                                                    if ($index !== $currentIndex && $index !== $currentIndex + 1) {
+                                                        $disabled = true;
+                                                    }
+                                                ?>
+                                                    <option value="<?= $option ?>"
+                                                        <?= ($status == $option) ? 'selected' : '' ?>
+                                                        <?= $disabled ? 'disabled' : '' ?>>
+                                                        <?php
+                                                        switch ($option) {
+                                                            case 'Chờ xử lý':
+                                                                echo '⏳ ';
+                                                                break;
+                                                            case 'Đang xử lý':
+                                                                echo '🕒 ';
+                                                                break;
+                                                            case 'Đang vận chuyển':
+                                                                echo '🚚 ';
+                                                                break;
+                                                            case 'Đã giao':
+                                                                echo '✅ ';
+                                                                break;
+                                                        }
+                                                        echo $option;
+                                                        ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </form>
+
                                     <?php endif; ?>
                                     <?php if ($data['info']->cancel_request == 1 && is_null($data['info']->cancel_approved)): ?>
                                         <form method="post" class="mt-2">
@@ -427,7 +473,7 @@ include 'includes/header.php';
                     var successToastEl = document.getElementById('successToast');
                     if (successToastEl) {
                         var toast = new bootstrap.Toast(successToastEl, {
-                            delay: 3000
+                            delay: 0
                         });
                         toast.show();
                     }
@@ -435,7 +481,7 @@ include 'includes/header.php';
                     var errorToastEl = document.getElementById('errorToast');
                     if (errorToastEl) {
                         var toast = new bootstrap.Toast(errorToastEl, {
-                            delay: 3000
+                            delay: 0
                         });
                         toast.show();
                     }

@@ -55,13 +55,14 @@ if ($discount['min_order_amount'] !== null && $totalPrice < $discount['min_order
     echo json_encode(['error' => 'Không đủ điều kiện sử dụng mã giảm giá']);
     exit;
 }
+$shippingFee = 30000;
 
 $discountAmount = $discount['discount_type'] === 'percent'
     ? $totalPrice * ($discount['discount_value'] / 100)
     : $discount['discount_value'];
 
 $discountAmount = min($discountAmount, $totalPrice);
-$totalAfterDiscount = round($totalPrice - $discountAmount);
+$totalAfterDiscount = round($totalPrice - $discountAmount) +$shippingFee;
 
 echo json_encode([
     'success' => true,

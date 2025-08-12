@@ -469,7 +469,6 @@ if (in_array($categoryId, [1, 2])) {
                 });
             }
         </script>
-
     </main>
 </div>
 

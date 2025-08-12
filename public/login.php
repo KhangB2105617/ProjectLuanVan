@@ -20,7 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userRecord = $user->findByEmailOrUsername($emailOrUsername);
 
         // Kiểm tra nếu người dùng tồn tại và mật khẩu chính xác
-        if ($userRecord && password_verify($password, $userRecord->password)) {
+        if ($userRecord) {
+    if (isset($userRecord->is_deleted) && $userRecord->is_deleted == 1) {
+        // Tài khoản đã bị vô hiệu hóa
+        $_SESSION['error'] = "Tài khoản của bạn đã bị vô hiệu hóa.";
+    } elseif (password_verify($password, $userRecord->password)) {
             // Đăng nhập thành công, lưu thông tin người dùng vào session
             $_SESSION['id'] = $userRecord->id;
             $_SESSION['user_id'] = $userRecord->id;
@@ -70,7 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Sai thông tin đăng nhập
             $_SESSION['error'] = "Tên đăng nhập hoặc mật khẩu không đúng.";
         }
-    }
+    } else {
+    // Không tìm thấy user
+    $_SESSION['error'] = "Tên đăng nhập hoặc mật khẩu không đúng.";
+}
+}
 }
 ?>
 <!DOCTYPE html>

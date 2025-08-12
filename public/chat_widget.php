@@ -162,7 +162,6 @@ $userId = $_SESSION['id'];
     <div id="chat-body">
         <div id="quick-questions" style="margin-bottom: 1px;">
             <div class="question-buttons">
-                <button onclick="sendQuickQuestion(this)">Đồng hồ này có chống nước không?</button>
                 <button onclick="sendQuickQuestion(this)">Có bảo hành bao lâu vậy?</button>
                 <button onclick="sendQuickQuestion(this)">Thời gian giao hàng dự kiến?</button>
                 <button onclick="sendQuickQuestion(this)">Shop có cửa hàng ở đâu?</button>

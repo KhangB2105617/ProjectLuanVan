@@ -70,7 +70,7 @@ if (!empty($orderIds)) {
         $vnpayStatuses[$row['order_id']] = $row['status']; // Đánh dấu đã thanh toán thành công qua VNPay
     }
 }
-
+$shippingFee = 30000;
 ?>
 
 <main>
@@ -126,6 +126,7 @@ if (!empty($orderIds)) {
                                 <div><strong>Mã giảm giá:</strong> <?= htmlspecialchars($order['discount_code']); ?></div>
                                 <div><strong>Giảm giá:</strong> -<?= number_format($order['discount_amount'], 0, ',', '.'); ?> VNĐ</div>
                             <?php endif; ?>
+                            <div><strong>Phí vận chuyển:</strong> <?= number_format($shippingFee, 0, ',', '.'); ?> VNĐ</div>
                             <div><strong>Tổng cộng:</strong> <?= number_format($order['total_price'], 0, ',', '.'); ?> VNĐ</div>
                             <?php if (in_array($order['status'], ['Chờ xử lý', 'Đang xử lý']) && !$order['cancel_request']): ?>
                                 <form method="post" action="/cancel_request.php">

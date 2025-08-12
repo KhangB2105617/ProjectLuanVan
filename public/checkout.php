@@ -59,8 +59,20 @@ if (isset($_SESSION['user_id'])) {
 }
 
 // --- Tính tổng và kiểm tra tồn kho ---
+// Lọc sản phẩm trong giỏ hàng chỉ giữ sản phẩm còn hàng (quantity trong kho > 0)
+$filteredCart = [];
+foreach ($cart as $productId => $qty) {
+    $product = $productModel->getById($productId);
+    if ($product && (int)$product->quantity > 0) {
+        $filteredCart[$productId] = $qty;
+    }
+}
+$cart = $filteredCart;
+
+// Lấy lại sản phẩm sau khi lọc
 $productIds = array_keys($cart);
 $products = $productModel->getProductsByIds($productIds);
+
 $totalPrice = 0;
 $insufficientItems = [];
 
@@ -72,11 +84,9 @@ foreach ($products as $product) {
     }
 }
 
+
 if (!empty($insufficientItems)) {
-    echo "<div class='container mt-5 text-center'><h2>Không đủ sản phẩm trong kho:</h2><ul>";
-    foreach ($insufficientItems as $item) echo "<li>$item</li>";
-    echo "</ul><a href='product.php' class='btn btn-primary mt-3'>Tiếp tục mua sắm</a></div>";
-    exit;
+    $stockError = "Không đủ sản phẩm trong kho: " . implode(", ", $insufficientItems);
 }
 
 // --- Phí vận chuyển ---
@@ -105,19 +115,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $paymentMethod = $_POST['payment_method'];
     $discountCode = $_POST['discount_code'] ?? null;
 
+    // Kiểm tra tồn kho trước khi tạo đơn
+    $insufficientItemsPost = [];
+    foreach ($products as $product) {
+        $qty = $cart[$product->id];
+        if ($product->quantity < $qty) {
+            $insufficientItemsPost[] = $product->name;
+        }
+    }
+    if (!empty($insufficientItemsPost)) {
+        $stockError = "Không đủ sản phẩm trong kho: " . implode(", ", $insufficientItemsPost);
+    }
+
     // --- Áp dụng mã giảm giá ---
     $discountAmount = 0;
-    $totalAfterDiscount = $totalPriceWithShipping;
+    $totalAfterDiscount = $totalPrice + $shippingFee; // mặc định chưa giảm
 
     if ($discountCode) {
         $stmt = $PDO->prepare("
-    SELECT d.*, s.id as saved_id
-    FROM discount_codes d
-    JOIN user_discount_codes s ON s.discount_code_id = d.id
-    WHERE d.code = ? AND s.user_id = ? AND s.used = 0
-        AND (d.expired_at IS NULL OR d.expired_at > NOW())
-        AND d.used_count < d.max_usage
-");
+        SELECT d.*, s.id as saved_id
+        FROM discount_codes d
+        JOIN user_discount_codes s ON s.discount_code_id = d.id
+        WHERE d.code = ? AND s.user_id = ? AND s.used = 0
+            AND (d.expired_at IS NULL OR d.expired_at > NOW())
+            AND d.used_count < d.max_usage
+    ");
         $stmt->execute([$discountCode, $user['id']]);
         $discount = $stmt->fetch();
 
@@ -127,11 +149,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($discount['min_order_amount'] !== null && $totalPrice < $discount['min_order_amount']) {
                 $discountError = "Đơn hàng tối thiểu cần đạt " . number_format($discount['min_order_amount'], 0, ',', '.') . " VNĐ để sử dụng mã này.";
             } else {
+                // Giảm giá chỉ áp dụng cho sản phẩm, không áp dụng phí vận chuyển
                 $discountAmount = $discount['discount_type'] === 'percent'
                     ? $totalPrice * ($discount['discount_value'] / 100)
                     : $discount['discount_value'];
+
+                // Không để giảm quá tiền sản phẩm
                 $discountAmount = min($discountAmount, $totalPrice);
-                $totalAfterDiscount = round($totalPriceWithShipping - $discountAmount);
+
+                // Tổng cộng sau giảm = (tiền sản phẩm - giảm) + phí ship
+                $totalAfterDiscount = round(($totalPrice - $discountAmount) + $shippingFee);
             }
         } else {
             $discountError = "Mã giảm giá không hợp lệ hoặc đã được sử dụng.";
@@ -164,7 +191,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($products as $product) {
             $qty = $cart[$product->id];
             $orderModel->insertOrderItem($orderId, $product->id, $product->name, $qty, $product->price);
-            $stockModel->updateStockQuantity($product->id, $qty, 'out', null, null, null, false);
         }
 
         // --- Nếu dùng VNPay ---
@@ -241,6 +267,12 @@ include_once __DIR__ . '/../src/partials/header.php';
 <main class="checkout-page">
 
     <div class="container mt-4">
+        <?php if (!empty($stockError)): ?>
+            <div class="alert alert-danger text-center" role="alert">
+                <?= htmlspecialchars($stockError) ?>
+            </div>
+        <?php endif; ?>
+
         <h3 class="text-center">Thông tin thanh toán</h3>
         <?php $discountCode = $discountCode ?? ''; ?>
         <form method="post" class="row g-4 bg-white rounded">
@@ -274,18 +306,14 @@ include_once __DIR__ . '/../src/partials/header.php';
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
-                        <tr>
-                            <th colspan="4" class="text-end">Tạm tính:</th>
-                            <th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th>
-                        </tr>
-                        <tr>
-                            <th colspan="4" class="text-end">Phí vận chuyển:</th>
-                            <th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th>
-                        </tr>
                         <?php if (!empty($discountCode) && !$discountError): ?>
                             <tr>
                                 <th colspan="4" class="text-end">Giảm giá (<?= htmlspecialchars($discountCode) ?>):</th>
                                 <th class="text-end text-danger">- <?= number_format($discountAmount, 0, ',', '.') ?> VNĐ</th>
+                            </tr>
+                            <tr>
+                                <th colspan="4" class="text-end">Phí vận chuyển:</th>
+                                <th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th>
                             </tr>
                             <tr>
                                 <th colspan="4" class="text-end">Tổng cộng sau giảm:</th>
@@ -293,10 +321,15 @@ include_once __DIR__ . '/../src/partials/header.php';
                             </tr>
                         <?php else: ?>
                             <tr>
+                                <th colspan="4" class="text-end">Phí vận chuyển:</th>
+                                <th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th>
+                            </tr>
+                            <tr>
                                 <th colspan="4" class="text-end">Tổng cộng:</th>
                                 <th class="text-end"><?= number_format($totalPriceWithShipping, 0, ',', '.') ?> VNĐ</th>
                             </tr>
                         <?php endif; ?>
+
                     </tfoot>
                 </table>
             </div>
@@ -351,8 +384,7 @@ include_once __DIR__ . '/../src/partials/header.php';
                 <label for="payment_method" class="form-label">Phương thức thanh toán</label>
                 <select class="form-select" name="payment_method" required>
                     <option value="cod">Thanh toán khi nhận hàng (COD)</option>
-                    <option value="credit_card">Thẻ tín dụng</option>
-                    <option value="e_wallet">VNPay</option>
+                    <option value="e_wallet">Thanh toán VNPay</option>
                 </select>
             </div>
             <div class="col-12 text-center">
@@ -383,6 +415,7 @@ include_once __DIR__ . '/../src/partials/header.php';
                     tbody.innerHTML = `
                 <tr><th colspan="4" class="text-end">Tạm tính:</th><th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th></tr>
                 <tr><th colspan="4" class="text-end">Giảm giá:</th><th class="text-end text-danger">- ${data.formattedDiscount}</th></tr>
+                <tr><th colspan="4" class="text-end">Phí vận chuyển:</th><th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th></tr>
                 <tr><th colspan="4" class="text-end">Tổng cộng sau giảm:</th><th class="text-end text-success">${data.formattedTotal}</th></tr>
             `;
                 }
