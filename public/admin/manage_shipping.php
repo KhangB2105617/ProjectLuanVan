@@ -194,13 +194,8 @@ include 'includes/header.php';
                                         <?php endforeach; ?>
                                     </ul>
                                 </td>
-                                <td>
-                                    <ul class="list-unstyled">
-                                        <?php foreach ($data['items'] as $item): ?>
-                                            <li><?= number_format($item['price']) ?>đ</li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </td>
+                                <td><?= number_format($data['info']->total_price) ?>đ</td>
+
                                 <td><?= htmlspecialchars($data['info']->payment_method === 'cod' ? 'COD' : 'VNPay') ?></td>
                                 <td><?= date('d/m/Y H:i', strtotime($data['info']->created_at)) ?></td>
 

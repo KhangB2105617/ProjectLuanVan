@@ -16,7 +16,8 @@ if ($role === 'admin') {
         SELECT o.id AS order_id, o.created_at AS order_date, o.status, o.total_price,
                o.discount_code, o.discount_amount, o.payment_method,
                oi.product_name, oi.quantity, oi.price,
-               u.username, u.email, u.address, u.phone
+               o.customer_address, o.customer_phone,
+               u.username, u.email
         FROM orders o
         JOIN order_items oi ON o.id = oi.order_id
         JOIN users u ON o.username = u.username
@@ -32,7 +33,8 @@ if ($role === 'admin') {
         SELECT o.id AS order_id, o.created_at AS order_date, o.status, o.total_price,
                o.discount_code, o.discount_amount, o.payment_method,
                oi.product_name, oi.quantity, oi.price,
-               u.username, u.email, u.address, u.phone
+               o.customer_address, o.customer_phone,
+               u.username, u.email
         FROM orders o
         JOIN order_items oi ON o.id = oi.order_id
         JOIN users u ON o.username = u.username
@@ -60,8 +62,8 @@ $order = [
     'discount_amount' => $rows[0]['discount_amount'],
     'username' => $rows[0]['username'],
     'email' => $rows[0]['email'],
-    'address' => $rows[0]['address'],
-    'phone' => $rows[0]['phone'],
+    'address' => $rows[0]['customer_address'],
+    'phone' => $rows[0]['customer_phone'],
     'payment_method' => $rows[0]['payment_method'],
     'items' => []
 ];
@@ -73,6 +75,7 @@ foreach ($rows as $row) {
         'price' => $row['price'],
     ];
 }
+$shipping_fee = 30000; // phí ship cố định
 ?>
 
 <!DOCTYPE html>
@@ -206,6 +209,7 @@ foreach ($rows as $row) {
             <p><strong>Mã giảm giá:</strong> <?= $order['discount_code'] ?></p>
             <p><strong>Giảm giá:</strong> -<?= number_format($order['discount_amount'], 0, ',', '.') ?> VNĐ</p>
         <?php endif; ?>
+        <p><strong>Phí vận chuyển:</strong> <?= number_format($shipping_fee, 0, ',', '.') ?> VNĐ</p>
         <p><strong>Tổng thanh toán:</strong> <?= number_format($order['total_price'], 0, ',', '.') ?> VNĐ</p>
         <p><strong>Phương thức thanh toán:</strong>
             <?php

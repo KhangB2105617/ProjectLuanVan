@@ -2,23 +2,23 @@
 session_start();
 require_once __DIR__ . '/../src/bootstrap.php';
 
+header('Content-Type: application/json');
+
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {
-    $_SESSION['error'] = "Bạn cần đăng nhập để lưu mã giảm giá.";
-    header('Location: /login.php');
+    echo json_encode(['success' => false, 'message' => 'Bạn cần đăng nhập để lưu mã giảm giá.']);
     exit;
 }
 
 $user_id = (int)$_SESSION['user_id'];
-$discount_code_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$discount_code_id = isset($_POST['code_id']) ? (int)$_POST['code_id'] : 0;
 
 if ($discount_code_id <= 0) {
-    $_SESSION['error'] = "Mã không hợp lệ.";
-    header('Location: /index.php');
+    echo json_encode(['success' => false, 'message' => 'Mã không hợp lệ.']);
     exit;
 }
 
-// Kiểm tra xem mã có tồn tại và còn hiệu lực không
+// Kiểm tra mã còn hiệu lực
 $stmt = $PDO->prepare("
     SELECT * FROM discount_codes 
     WHERE id = ? 
@@ -28,12 +28,11 @@ $stmt->execute([$discount_code_id]);
 $discount = $stmt->fetch();
 
 if (!$discount) {
-    $_SESSION['error'] = "Mã giảm giá không tồn tại hoặc đã hết hạn.";
-    header('Location: /index.php');
+    echo json_encode(['success' => false, 'message' => 'Mã giảm giá không tồn tại hoặc đã hết hạn.']);
     exit;
 }
 
-// Kiểm tra xem đã lưu chưa
+// Kiểm tra đã lưu chưa
 $stmt = $PDO->prepare("
     SELECT id FROM user_discount_codes 
     WHERE user_id = ? AND discount_code_id = ?
@@ -41,8 +40,7 @@ $stmt = $PDO->prepare("
 $stmt->execute([$user_id, $discount_code_id]);
 
 if ($stmt->fetch()) {
-    $_SESSION['message'] = "Bạn đã lưu mã này rồi.";
-    header('Location: /index.php');
+    echo json_encode(['success' => false, 'message' => 'Bạn đã lưu mã này rồi.']);
     exit;
 }
 
@@ -53,6 +51,5 @@ $stmt = $PDO->prepare("
 ");
 $stmt->execute([$user_id, $discount_code_id]);
 
-$_SESSION['success'] = "Lưu mã thành công!";
-header('Location: /index.php');
+echo json_encode(['success' => true, 'message' => 'Lưu mã thành công!']);
 exit;

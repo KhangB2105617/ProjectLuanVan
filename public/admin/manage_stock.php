@@ -140,7 +140,7 @@ if (isset($_SESSION['error_message'])) {
                                     </form>
 
                                     <?php if (!empty($productHistories[$product->id])): ?>
-                                        <button class="btn btn-info btn-sm mt-1" type="button"
+                                        <button class="btn btn-info btn-sm" type="button"
                                             data-bs-toggle="collapse"
                                             data-bs-target="#history-<?= $product->id ?>"
                                             aria-expanded="false"

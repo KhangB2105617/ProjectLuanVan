@@ -79,6 +79,10 @@ if (!empty($insufficientItems)) {
     exit;
 }
 
+// --- Phí vận chuyển ---
+$shippingFee = 30000;
+$totalPriceWithShipping = $totalPrice + $shippingFee;
+
 // --- Mã giảm giá ---
 $availableDiscounts = $PDO->prepare("
     SELECT d.code, d.discount_type, d.discount_value, d.expired_at
@@ -103,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // --- Áp dụng mã giảm giá ---
     $discountAmount = 0;
-    $totalAfterDiscount = $totalPrice;
+    $totalAfterDiscount = $totalPriceWithShipping;
 
     if ($discountCode) {
         $stmt = $PDO->prepare("
@@ -127,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ? $totalPrice * ($discount['discount_value'] / 100)
                     : $discount['discount_value'];
                 $discountAmount = min($discountAmount, $totalPrice);
-                $totalAfterDiscount = round($totalPrice - $discountAmount);
+                $totalAfterDiscount = round($totalPriceWithShipping - $discountAmount);
             }
         } else {
             $discountError = "Mã giảm giá không hợp lệ hoặc đã được sử dụng.";
@@ -189,47 +193,48 @@ $old = [
 include_once __DIR__ . '/../src/partials/header.php';
 ?>
 <style>
-.checkout-page {
-    background-color: #f8f9fa;
-    padding-top: 40px;
-    padding-bottom: 40px;
-}
+    .checkout-page {
+        background-color: #f8f9fa;
+        padding-top: 40px;
+        padding-bottom: 40px;
+    }
 
-.checkout-page .container {
-    max-width: 1000px;
-    background: white;
-    border-radius: 12px;
-    padding: 30px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
-}
+    .checkout-page .container {
+        max-width: 1000px;
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
 
-.checkout-page h3 {
-    font-weight: bold;
-    margin-bottom: 30px;
-}
+    .checkout-page h3 {
+        font-weight: bold;
+        margin-bottom: 30px;
+    }
 
-.table th, .table td {
-    vertical-align: middle !important;
-}
+    .table th,
+    .table td {
+        vertical-align: middle !important;
+    }
 
-.table img {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-}
+    .table img {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
 
-.btn-success {
-    padding: 12px 30px;
-    font-size: 18px;
-    border-radius: 8px;
-}
+    .btn-success {
+        padding: 12px 30px;
+        font-size: 18px;
+        border-radius: 8px;
+    }
 
-.form-label {
-    font-weight: 600;
-}
+    .form-label {
+        font-weight: 600;
+    }
 
-.alert-warning {
-    font-size: 14px;
-}
+    .alert-warning {
+        font-size: 14px;
+    }
 </style>
 
 <!-- HTML GIAO DIỆN BẮT ĐẦU -->
@@ -239,58 +244,62 @@ include_once __DIR__ . '/../src/partials/header.php';
         <h3 class="text-center">Thông tin thanh toán</h3>
         <?php $discountCode = $discountCode ?? ''; ?>
         <form method="post" class="row g-4 bg-white rounded">
-              <!-- CHI TIẾT GIỎ HÀNG ĐƯA VÀO TRONG FORM -->
-    <div class="col-12">
-        <h4>Chi tiết sản phẩm</h4>
-        <table class="table table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>Sản phẩm</th>
-                    <th>Tên</th>
-                    <th class="text-end">Giá</th>
-                    <th class="text-center">Số lượng</th>
-                    <th class="text-end">Tổng</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($products as $product):
-                    $quantity = $cart[$product->id];
-                    $subtotal = $product->price * $quantity;
-                ?>
-                    <tr>
-                        <td style="width: 80px;">
-                            <img src="/assets/img/<?= htmlspecialchars($product->image ?? 'no-image.jpg') ?>" class="img-fluid rounded" style="width: 70px;">
-                        </td>
-                        <td><?= htmlspecialchars($product->name) ?></td>
-                        <td class="text-end"><?= number_format($product->price, 0, ',', '.') ?> VNĐ</td>
-                        <td class="text-center"><?= $quantity ?></td>
-                        <td class="text-end"><?= number_format($subtotal, 0, ',', '.') ?> VNĐ</td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="4" class="text-end">Tạm tính:</th>
-                    <th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th>
-                </tr>
-                <?php if (!empty($discountCode) && !$discountError): ?>
-                    <tr>
-                        <th colspan="4" class="text-end">Giảm giá (<?= htmlspecialchars($discountCode) ?>):</th>
-                        <th class="text-end text-danger">- <?= number_format($discountAmount, 0, ',', '.') ?> VNĐ</th>
-                    </tr>
-                    <tr>
-                        <th colspan="4" class="text-end">Tổng cộng sau giảm:</th>
-                        <th class="text-end text-success"><?= number_format($totalAfterDiscount, 0, ',', '.') ?> VNĐ</th>
-                    </tr>
-                <?php else: ?>
-                    <tr>
-                        <th colspan="4" class="text-end">Tổng cộng:</th>
-                        <th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th>
-                    </tr>
-                <?php endif; ?>
-            </tfoot>
-        </table>
-    </div>
+            <!-- CHI TIẾT GIỎ HÀNG ĐƯA VÀO TRONG FORM -->
+            <div class="col-12">
+                <h4>Chi tiết sản phẩm</h4>
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Tên</th>
+                            <th class="text-end">Giá</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-end">Tổng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($products as $product):
+                            $quantity = $cart[$product->id];
+                            $subtotal = $product->price * $quantity;
+                        ?>
+                            <tr>
+                                <td style="width: 80px;">
+                                    <img src="/assets/img/<?= htmlspecialchars($product->image ?? 'no-image.jpg') ?>" class="img-fluid rounded" style="width: 70px;">
+                                </td>
+                                <td><?= htmlspecialchars($product->name) ?></td>
+                                <td class="text-end"><?= number_format($product->price, 0, ',', '.') ?> VNĐ</td>
+                                <td class="text-center"><?= $quantity ?></td>
+                                <td class="text-end"><?= number_format($subtotal, 0, ',', '.') ?> VNĐ</td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Tạm tính:</th>
+                            <th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th>
+                        </tr>
+                        <tr>
+                            <th colspan="4" class="text-end">Phí vận chuyển:</th>
+                            <th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th>
+                        </tr>
+                        <?php if (!empty($discountCode) && !$discountError): ?>
+                            <tr>
+                                <th colspan="4" class="text-end">Giảm giá (<?= htmlspecialchars($discountCode) ?>):</th>
+                                <th class="text-end text-danger">- <?= number_format($discountAmount, 0, ',', '.') ?> VNĐ</th>
+                            </tr>
+                            <tr>
+                                <th colspan="4" class="text-end">Tổng cộng sau giảm:</th>
+                                <th class="text-end text-success"><?= number_format($totalAfterDiscount, 0, ',', '.') ?> VNĐ</th>
+                            </tr>
+                        <?php else: ?>
+                            <tr>
+                                <th colspan="4" class="text-end">Tổng cộng:</th>
+                                <th class="text-end"><?= number_format($totalPriceWithShipping, 0, ',', '.') ?> VNĐ</th>
+                            </tr>
+                        <?php endif; ?>
+                    </tfoot>
+                </table>
+            </div>
             <div class="col-md-6">
                 <label for="name" class="form-label">Họ tên</label>
                 <input type="text" class="form-control" name="name" required value="<?= htmlspecialchars($old['name'] ?: ($user['username'] ?? '')) ?>">
@@ -353,31 +362,31 @@ include_once __DIR__ . '/../src/partials/header.php';
     </div>
 </main>
 <script>
-document.querySelector('select[name="discount_code"]').addEventListener('change', function () {
-    const code = this.value;
-    const formData = new FormData();
-    formData.append('discount_code', code);
+    document.querySelector('select[name="discount_code"]').addEventListener('change', function() {
+        const code = this.value;
+        const formData = new FormData();
+        formData.append('discount_code', code);
 
-    fetch('check_discount.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        const tbody = document.querySelector('tfoot');
-        if (data.error) {
-            tbody.innerHTML = `
+        fetch('check_discount.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.querySelector('tfoot');
+                if (data.error) {
+                    tbody.innerHTML = `
                 <tr><th colspan="4" class="text-end">Tổng cộng:</th><th class="text-end">${new Intl.NumberFormat('vi-VN').format(<?= $totalPrice ?>)} VNĐ</th></tr>
                 <tr><td colspan="5"><div class="alert alert-warning mt-2">${data.error}</div></td></tr>
             `;
-        } else {
-            tbody.innerHTML = `
+                } else {
+                    tbody.innerHTML = `
                 <tr><th colspan="4" class="text-end">Tạm tính:</th><th class="text-end"><?= number_format($totalPrice, 0, ',', '.') ?> VNĐ</th></tr>
                 <tr><th colspan="4" class="text-end">Giảm giá:</th><th class="text-end text-danger">- ${data.formattedDiscount}</th></tr>
                 <tr><th colspan="4" class="text-end">Tổng cộng sau giảm:</th><th class="text-end text-success">${data.formattedTotal}</th></tr>
             `;
-        }
+                }
+            });
     });
-});
 </script>
 <?php include_once __DIR__ . '/../src/partials/footer.php'; ?>

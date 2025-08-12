@@ -12,7 +12,16 @@ $stmt = $PDO->prepare("
 ");
 $stmt->execute();
 $globalDiscounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+$savedDiscounts = [];
+if (isset($_SESSION['user_id'])) {
+    $stmt = $PDO->prepare("
+        SELECT discount_code_id 
+        FROM user_discount_codes 
+        WHERE user_id = ?
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    $savedDiscounts = $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
 // Lấy sản phẩm bán chạy
 use NL\Order;
 
@@ -78,9 +87,18 @@ $products = $order->getTopSellingProducts(5); // lấy top 5 bán chạy
                                             : 'Không giới hạn' ?>
                                     </small>
                                 </p>
-                                <a href="/save_discount.php?id=<?= $discount['id'] ?>" class="btn btn-sm btn-success">
-                                    <i class="fas fa-download"></i> Lưu mã
-                                </a>
+                                <?php
+                                $alreadySaved = in_array($discount['id'], $savedDiscounts);
+                                if ($alreadySaved):
+                                ?>
+                                    <button class="btn btn-sm btn-secondary" disabled>Đã lưu</button>
+                                <?php else: ?>
+                                    <button
+                                        class="btn btn-sm btn-success save-discount-btn"
+                                        data-code-id="<?= $discount['id'] ?>">
+                                        <i class="fas fa-download"></i> Lưu mã
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -186,6 +204,7 @@ $products = $order->getTopSellingProducts(5); // lấy top 5 bán chạy
         document.querySelectorAll('.save-discount-btn').forEach(button => {
             button.addEventListener('click', function() {
                 const codeId = this.dataset.codeId;
+                const btn = this;
 
                 fetch('/save_discount.php', {
                         method: 'POST',
@@ -194,13 +213,15 @@ $products = $order->getTopSellingProducts(5); // lấy top 5 bán chạy
                         },
                         body: 'code_id=' + encodeURIComponent(codeId)
                     })
-                    .then(response => response.json())
+                    .then(res => res.json())
                     .then(data => {
                         if (data.success) {
-                            this.innerText = "Đã lưu";
-                            this.disabled = true;
+                            btn.innerText = "Đã lưu";
+                            btn.disabled = true;
+                            btn.classList.remove("btn-success");
+                            btn.classList.add("btn-secondary");
                         } else {
-                            alert(data.message || "Có lỗi xảy ra!");
+                            alert(data.message);
                         }
                     });
             });

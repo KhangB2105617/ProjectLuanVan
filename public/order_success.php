@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../src/bootstrap.php';
+
 use NL\Order;
 
 // Lấy và kiểm tra order_id
@@ -30,8 +31,8 @@ include_once __DIR__ . '/../src/partials/header.php';
             ⚠️ Đơn hàng của bạn hiện chưa được thanh toán.
             <br>
             <a href="/payment/vnpay_create.php?order_id=<?= $orderId ?>&total_price=<?= $order['total_price'] ?>"
-               class="btn btn-primary mt-3">
-               Thanh toán ngay
+                class="btn btn-primary mt-3">
+                Thanh toán ngay
             </a>
         </div>
     <?php else: ?>
@@ -63,8 +64,8 @@ include_once __DIR__ . '/../src/partials/header.php';
             <?php $total = 0; ?>
             <?php foreach ($orderItems as $item): ?>
                 <?php
-                    $subtotal = $item['quantity'] * $item['price'];
-                    $total += $subtotal;
+                $subtotal = $item['quantity'] * $item['price'];
+                $total += $subtotal;
                 ?>
                 <tr>
                     <td><?= htmlspecialchars($item['product_name']) ?></td>
@@ -75,22 +76,34 @@ include_once __DIR__ . '/../src/partials/header.php';
             <?php endforeach; ?>
         </tbody>
         <tfoot class="table-light">
+            <?php
+            $shippingFee = 30000; // 30k phí ship
+            ?>
+            <tr>
+                <th colspan="3" class="text-end">Tạm tính:</th>
+                <th class="text-end"><?= number_format($total, 0, ',', '.') ?> VNĐ</th>
+            </tr>
+            <tr>
+                <th colspan="3" class="text-end">Phí vận chuyển:</th>
+                <th class="text-end"><?= number_format($shippingFee, 0, ',', '.') ?> VNĐ</th>
+            </tr>
+
             <?php if (!empty($order['discount_amount']) && $order['discount_amount'] > 0): ?>
-                <tr>
-                    <th colspan="3" class="text-end">Tạm tính:</th>
-                    <th class="text-end"><?= number_format($total, 0, ',', '.') ?> VNĐ</th>
-                </tr>
                 <tr>
                     <th colspan="3" class="text-end">Giảm giá:</th>
                     <th class="text-end">-<?= number_format($order['discount_amount'], 0, ',', '.') ?> VNĐ</th>
                 </tr>
-                <?php $total -= $order['discount_amount']; ?>
+                <?php $total = $total + $shippingFee - $order['discount_amount']; ?>
+            <?php else: ?>
+                <?php $total = $total + $shippingFee; ?>
             <?php endif; ?>
+
             <tr>
                 <th colspan="3" class="text-end">Tổng cộng:</th>
                 <th class="text-end text-danger"><?= number_format($total, 0, ',', '.') ?> VNĐ</th>
             </tr>
         </tfoot>
+
     </table>
 </div>
 

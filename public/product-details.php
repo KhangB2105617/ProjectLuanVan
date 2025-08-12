@@ -191,80 +191,106 @@ if (in_array($categoryId, [1, 2])) {
             <h5 class="fw-bold">Thông số sản phẩm - <?= htmlspecialchars($product->name); ?></h5>
 
             <?php if ($details): ?>
-                <div class="card mt-4"style="max-width: 700px;">
-                    <div class="card-header d-flex">
-                        <button class="btn btn-primary me-2" disabled>Thông số kỹ thuật</button>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-bordered">
-                            <tr>
-                                <th>Đối tượng sử dụng:</th>
-                                <td><?= htmlspecialchars($details['target_user']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Đường kính mặt:</th>
-                                <td><?= htmlspecialchars($details['diameter']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Chất liệu dây:</th>
-                                <td><?= htmlspecialchars($details['strap_material']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Độ rộng dây:</th>
-                                <td><?= htmlspecialchars($details['strap_width']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Chất liệu khung viền:</th>
-                                <td><?= htmlspecialchars($details['frame_material']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Độ dày mặt:</th>
-                                <td><?= htmlspecialchars($details['thickness']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Chất liệu mặt kính:</th>
-                                <td><?= htmlspecialchars($details['glass_material']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Thời gian sử dụng pin:</th>
-                                <td><?= htmlspecialchars($details['battery_life']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Kháng nước:</th>
-                                <td><?= htmlspecialchars($details['water_resistance']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Tiện ích:</th>
-                                <td><?= nl2br(htmlspecialchars($details['utilities'])) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Nguồn năng lượng:</th>
-                                <td><?= htmlspecialchars($details['power_source']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Loại máy:</th>
-                                <td><?= htmlspecialchars($details['movement_type']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Sản xuất tại:</th>
-                                <td><?= htmlspecialchars($details['manufacture_location']) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Thương hiệu của:</th>
-                                <td><?= htmlspecialchars($product->brand_origin) ?></td>
-                            </tr>
-                            <tr>
-                                <th>Hãng:</th>
-                                <td><?= htmlspecialchars($product->brand_name) ?>
-                                    <?php if (!empty($details['manual_link'])): ?>
-                                        - <a href="<?= htmlspecialchars($details['manual_link']) ?>" target="_blank">Hướng dẫn sử dụng</a>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            <?php endif; ?>
+    <div class="card mt-4" style="max-width: 700px;">
+        <div class="card-header d-flex">
+            <button class="btn btn-primary me-2" disabled>Thông số kỹ thuật</button>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <?php if ($product->category_id == 3): ?>
+                    <!-- Chỉ hiển thị các cột dành cho phụ kiện -->
+                    <tr>
+                        <th>Đối tượng sử dụng:</th>
+                        <td><?= htmlspecialchars($details['target_user']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Chất liệu dây:</th>
+                        <td><?= htmlspecialchars($details['strap_material']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Độ rộng dây:</th>
+                        <td><?= htmlspecialchars($details['strap_width']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Sản xuất tại:</th>
+                        <td><?= htmlspecialchars($details['manufacture_location']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Thương hiệu của:</th>
+                        <td><?= htmlspecialchars($product->brand_origin) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Hãng:</th>
+                        <td><?= htmlspecialchars($product->brand_name) ?></td>
+                    </tr>
+                <?php else: ?>
+                    <!-- Các cột đầy đủ cho đồng hồ -->
+                    <tr>
+                        <th>Đối tượng sử dụng:</th>
+                        <td><?= htmlspecialchars($details['target_user']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Đường kính mặt:</th>
+                        <td><?= htmlspecialchars($details['diameter']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Chất liệu dây:</th>
+                        <td><?= htmlspecialchars($details['strap_material']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Độ rộng dây:</th>
+                        <td><?= htmlspecialchars($details['strap_width']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Chất liệu khung viền:</th>
+                        <td><?= htmlspecialchars($details['frame_material']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Độ dày mặt:</th>
+                        <td><?= htmlspecialchars($details['thickness']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Chất liệu mặt kính:</th>
+                        <td><?= htmlspecialchars($details['glass_material']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Thời gian sử dụng pin:</th>
+                        <td><?= htmlspecialchars($details['battery_life']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Kháng nước:</th>
+                        <td><?= htmlspecialchars($details['water_resistance']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Tiện ích:</th>
+                        <td><?= nl2br(htmlspecialchars($details['utilities'])) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Nguồn năng lượng:</th>
+                        <td><?= htmlspecialchars($details['power_source']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Loại máy:</th>
+                        <td><?= htmlspecialchars($details['movement_type']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Sản xuất tại:</th>
+                        <td><?= htmlspecialchars($details['manufacture_location']) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Thương hiệu của:</th>
+                        <td><?= htmlspecialchars($product->brand_origin) ?></td>
+                    </tr>
+                    <tr>
+                        <th>Hãng:</th>
+                        <td><?= htmlspecialchars($product->brand_name) ?></td>
+                    </tr>
+                <?php endif; ?>
+            </table>
+        </div>
+    </div>
+<?php endif; ?>
+
         </div>
         <style>
             .rating-summary h2 {
