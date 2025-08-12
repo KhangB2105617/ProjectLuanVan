@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group">
             <label>Hình ảnh hiện tại</label><br>
             <?php if ($current->image): ?>
-                <img src="/assets/news/<?= htmlspecialchars($current->image) ?>" alt="Ảnh" style="max-width: 200px;">
+                <img src="/assets/img/<?= htmlspecialchars($current->image) ?>" alt="Ảnh" style="max-width: 200px;">
             <?php else: ?>
                 <p>Không có ảnh</p>
             <?php endif; ?>
